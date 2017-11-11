@@ -1,56 +1,96 @@
-{-# LANGUAGE OverloadedStrings #-}
-module Gnut 
-    ( startup
-    , startupWith
-    ) where
+module Gnut
+    ( Gnut
+    , runGnut
+    , GnutS(..)
 
-import   Control.Applicative       ((<$>))
-import   Control.Concurrent        (forkIO)
-import   Control.Concurrent.MVar   (newMVar)
-import   Control.Monad             (forM, forM_)
-import   Data.Maybe                (catMaybes)
-import   qualified                 Data.Text as T
-import   qualified                 Database.SQLite.Simple as SQLite
-import   System.Environment        (getProgName)
+    , eventLoop
 
-import Gnut.App
-import Gnut.Logger
-import Gnut.IRC
-import Gnut.Plugin
+    , parseConfig
+    , Config(..)
+    , setupSession
+    , getMessage
 
--- Start Gnut with default plugins
-startup :: IrcConfig -> IO ()
-startup = startupWith defplugins
+    , Command
+    , setupNetwork
+    , setupAll
+    )
+    where
 
--- Start Gnut with a defined set of handlers
-startupWith :: [NotYetPlugin] -> IrcConfig -> IO ()
-startupWith plugins config = do
-    logName <- (++ ".log") <$> getProgName
-    logger <- makeLogger logName
+import Gnut.Types
+import Gnut.Config
+import Gnut.Xmpp
+import Gnut.Command.Xmpp
+import Gnut.Tui
 
-    runApp logger (T.unpack $ ircHost config) (ircPort config) $
-        app logger plugins config
 
-app :: Logger -> [NotYetPlugin] -> IrcConfig -> App
-app logger plugins config writer = do
-    db <- newMVar =<< SQLite.open (ircDatabase config)
-    let env = IrcEnvironment config db writer logger
+import Reactive.Banana.Frameworks
+import Reactive.Banana.Combinators
+import Control.Event.Handler
 
-    plugins' <- forM plugins $
-        \p -> do
-            let state = IrcState env
-                    (error "Message not known yet")
-                    (error "Uninitialized plugin")
-            r <- initializePlugin p state
-            {-
-             -case r of
-             -    Nothing -> logger $ "Could not initialize plugin: " <> name
-             -    Just _  -> logger $ "Initialized plugin: " <> name
-             -}
-            return r
+import Data.Maybe
+import Data.Map (fromList)
 
-    return $ \msg -> 
-        forM_ plugins' $ \p -> do
-            let state = IrcState env msg p
-            _ <- forkIO $ runPlugin p state
-            return ()
+import Control.Monad
+
+import Network.Xmpp
+import Network.Xmpp.IM
+
+import Data.Text (Text)
+
+import Control.Concurrent (threadDelay)
+
+eventLoop :: Gnut ()
+eventLoop = liftIO $ forever $ do
+    putStrLn "Tick"
+    threadDelay 1000000
+    putStrLn "Tock"
+    threadDelay 1000000
+
+{-
+ -withGnut :: FilePath -> IO ()
+ -withGnut configpath = do
+ -    config <- fromJust <$> parseConfig configpath
+ -    sess <- setupSession config
+ -    hndl <- setupAll sess
+ -
+ -    let gnuts = GnutS (fromList []) hndl sess
+ -
+ -    _ <- runGnut config gnuts eventLoop
+ -
+ -    return ()
+ -
+ -eventLoop :: Gnut ()
+ -eventLoop = do
+ -    s <- get
+ -    let se = gnutSession s
+ -        hndl = globalHndl s
+ -    forever $ do
+ -        msg <- getMessage se
+ -        hndl msg
+ -    return ()
+ -}
+
+setupAll :: Session -> IO (Message -> IO ())
+setupAll sess = do
+    (addHandler, fire) <- newAddHandler
+    network <- setupNetwork sess addHandler
+    actuate network
+    return fire
+
+
+setupNetwork :: Session -> AddHandler Message -> IO EventNetwork
+setupNetwork sess esmsg = compile $ do
+    emsg <- fromAddHandler esmsg
+
+    let ecmd = filterJust $ apply parseMessageB emsg
+
+    reactimate $ fmap print ecmd
+    reactimate $ fmap (evalCommand sess) ecmd
+
+evalCommand :: Session -> Command -> IO ()
+evalCommand sess ("^Hai", m) = 
+        void (sendMessage (fromJust (answerIM [MessageBody Nothing "Hai!" ] m)) sess)
+evalCommand sess ("^HowDoing", m) =
+        void (sendMessage (fromJust (answerIM [MessageBody Nothing "Baby steps...." ] m)) sess)
+evalCommand sess (_, m) =
+        void (sendMessage (fromJust (answerIM [MessageBody Nothing "I don't know that command, sorry."] m)) sess)
