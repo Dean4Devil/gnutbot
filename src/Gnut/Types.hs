@@ -44,6 +44,7 @@ data GnutS = GnutS
     { channelmap :: Map.Map MUCName (Command -> IO ())
     , globalHndl :: Handler Message
     , gnutSession :: Session
+    , plugins :: Message -> Gnut ()
     }
 
 type Command = (Text, Message)

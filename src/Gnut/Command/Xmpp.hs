@@ -21,3 +21,5 @@ parseMessage m = do
     im <- getIM m
     let t = bodyContent . head . imBody $ im
     Just (t, m)
+
+imPlugin =

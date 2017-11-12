@@ -1,10 +1,13 @@
 module Gnut.Xmpp
     ( setupSession
     , getMessage
+    , Gnut.Xmpp.sendMessage
+    , xmppLoop
     )
     where
 
 import Gnut.Config
+import qualified Gnut.Types as G
 
 import Control.Lens
 import Control.Monad
@@ -30,3 +33,17 @@ setupSession c = do
     return sess
   where
     reconnectSession sess failure = void (reconnect' sess)
+
+sendMessage :: Message -> G.Gnut ()
+sendMessage m = do
+    s <- G.gnutSession <$> G.get
+    liftIO $ void $ Network.Xmpp.sendMessage m s
+
+xmppLoop :: Handler Message -> Gnut ()
+xmppLoop sink = loop
+    where
+    loop = do
+        s <- G.gnutSession <$> G.get
+        l <- liftIO $ getMessage s
+        sink l
+        loop

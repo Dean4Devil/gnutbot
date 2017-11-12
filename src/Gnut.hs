@@ -30,21 +30,19 @@ import Control.Event.Handler
 import Data.Maybe
 import Data.Map (fromList)
 
+import Control.Concurrent
 import Control.Monad
+import Control.Monad.IO.Class
 
-import Network.Xmpp
+import Network.Xmpp as X
 import Network.Xmpp.IM
 
 import Data.Text (Text)
 
-import Control.Concurrent (threadDelay)
-
 eventLoop :: Gnut ()
-eventLoop = liftIO $ forever $ do
-    putStrLn "Tick"
-    threadDelay 1000000
-    putStrLn "Tock"
-    threadDelay 1000000
+eventLoop = do
+    id <- liftIO $ forkIO xmppLoop
+    tuiLoop
 
 {-
  -withGnut :: FilePath -> IO ()
@@ -89,8 +87,8 @@ setupNetwork sess esmsg = compile $ do
 
 evalCommand :: Session -> Command -> IO ()
 evalCommand sess ("^Hai", m) = 
-        void (sendMessage (fromJust (answerIM [MessageBody Nothing "Hai!" ] m)) sess)
+        void (X.sendMessage (fromJust (answerIM [MessageBody Nothing "Hai!" ] m)) sess)
 evalCommand sess ("^HowDoing", m) =
-        void (sendMessage (fromJust (answerIM [MessageBody Nothing "Baby steps...." ] m)) sess)
+        void (X.sendMessage (fromJust (answerIM [MessageBody Nothing "Baby steps...." ] m)) sess)
 evalCommand sess (_, m) =
-        void (sendMessage (fromJust (answerIM [MessageBody Nothing "I don't know that command, sorry."] m)) sess)
+        void (X.sendMessage (fromJust (answerIM [MessageBody Nothing "I don't know that command, sorry."] m)) sess)

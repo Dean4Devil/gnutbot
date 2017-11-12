@@ -56,6 +56,8 @@ library
                  , Gnut.Config
                  , Gnut.Xmpp
                  , Gnut.Command.Xmpp
+                 , Gnut.Tui
+                 , Gnut.Command.Tui
 
     -- LANGUAGE extensions used by modules in this package.
     default-extensions: OverloadedStrings
