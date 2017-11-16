@@ -17,6 +17,8 @@ import Data.Default
 
 import qualified Data.Text as T
 
+import Reactive.Banana.Frameworks
+
 import Network.Xmpp
 import Network.Xmpp.IM
 import Network.Xmpp.Internal (TlsBehaviour(..))
@@ -39,11 +41,11 @@ sendMessage m = do
     s <- G.gnutSession <$> G.get
     liftIO $ void $ Network.Xmpp.sendMessage m s
 
-xmppLoop :: Handler Message -> Gnut ()
+xmppLoop :: Handler Message -> G.Gnut ()
 xmppLoop sink = loop
     where
     loop = do
         s <- G.gnutSession <$> G.get
         l <- liftIO $ getMessage s
-        sink l
+        liftIO $ sink l
         loop

@@ -25,7 +25,9 @@ printUsage = liftIO $ mapM_ putStrLn
     ]
 
 tuiLoop :: Gnut ()
-tuiLoop = printUsage >>= loop
+tuiLoop = do
+    printUsage
+    loop
     where
     loop = do
         l <- liftIO $ do

@@ -22,6 +22,6 @@ main = do
 
     fire <- setupAll sess
 
-    let gnuts = GnutS (Map.fromList []) fire sess
+    let gnuts = GnutS (Map.fromList []) fire sess (\_ -> return ())
 
-    runGnut config gnuts (eventLoop)
+    runGnut config gnuts eventLoop
