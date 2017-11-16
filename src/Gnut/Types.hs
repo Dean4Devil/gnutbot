@@ -49,3 +49,8 @@ data GnutS = GnutS
 
 type Command = (Text, Message)
 
+data GMessage = GMessage
+    { messageSource :: Maybe Jid
+    , messageContext :: Maybe MUCName
+    , messageContent :: Text
+    }
