@@ -41,7 +41,7 @@ import Data.Text (Text)
 
 eventLoop :: Gnut ()
 eventLoop = do
-    xmppLoop . globalHndl <$> get
+    forkIO $ xmppLoop . globalHndl <$> get
     tuiLoop
 
 {-
