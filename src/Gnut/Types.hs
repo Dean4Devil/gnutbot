@@ -12,6 +12,7 @@ module Gnut.Types
     where
 
 import Gnut.Config
+import Gnut.Permission
 
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State
@@ -45,6 +46,13 @@ data GnutS = GnutS
     , globalHndl :: Handler Message
     , gnutSession :: Session
     , plugins :: Message -> Gnut ()
+    }
+
+data Access = Access
+    { globalRoles :: [Text]
+    , globalPerms :: [Permission]
+    , localRoles :: Map.Map Text [Text]
+    , localPerms :: Map.Map Text [Permission]
     }
 
 type Command = (Text, Message)

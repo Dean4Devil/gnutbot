@@ -12,8 +12,6 @@ module Gnut.Permission
     )
     where
 
-import Gnut.Types
-
 import Data.List
 import Data.Map.Lazy hiding (filter)
 import Data.Maybe
@@ -54,7 +52,7 @@ data Permission = Positive PermDesc
   deriving (Eq)
 instance Show Permission where
     show (Positive path) = show path
-    show (Negative path) = "!" ++ show path
+    show (Negative path) = "~" ++ show path
 instance Ord Permission where
     compare (Positive x) (Positive y) = compare x y
     compare (Positive x) (Negative y) = compare x y

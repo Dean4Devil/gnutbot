@@ -25,7 +25,7 @@ import Network.Xmpp.Internal (TlsBehaviour(..))
 
 setupSession :: Config -> IO Session
 setupSession c = do
-    result <- session (T.unpack $ cHost c) (Just (const [plain (cUser c) Nothing (cPW c)], Nothing)) $ def
+    result <- session ("paranoidlabs.org") (Just (const [plain "gnut" Nothing "quailaeQu3ahbei0vaXa"], Nothing)) $ def
         & streamConfigurationL .  tlsBehaviourL .~ RequireTls
         & onConnectionClosedL .~ reconnectSession
     sess <- case result of
