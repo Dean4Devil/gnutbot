@@ -99,18 +99,6 @@ data Config = Config
     } deriving (Eq, Show)
 makeLenses ''Config
 
-instance FromJSON Permission where
-    parseJSON (Y.String v) = case T.head v of
-        '~' -> do
-            let parts = T.splitOn "." (T.tail v)
-            return $ Negative (desc parts)
-        _   -> do
-            let parts = T.splitOn "." v
-            return $ Positive (desc parts)
-      where desc xs = case last xs of
-                "*" -> Wildcard (PermPath (init xs))
-                _   -> Precise (PermPath xs)
-
 instance FromJSON ConnectionConfig where
     parseJSON (Y.Object v) = ConnectionConfig
         <$> (v .: "host")
@@ -136,6 +124,8 @@ instance FromJSON PluginLoad where
         "active"   -> Active
         "inactive" -> Inactive
         "disabled" -> Disabled
+        _          -> error "Not a valid load setting"
+    parseJSON _ = error "load setting must be a string"
 
 instance FromJSON PluginConfig where
     parseJSON (Y.Object v) = PluginConfig

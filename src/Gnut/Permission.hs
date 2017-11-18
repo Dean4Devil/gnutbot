@@ -16,6 +16,9 @@ import Data.List
 import Data.Map.Lazy hiding (filter)
 import Data.Maybe
 
+import Data.Yaml (FromJSON(..))
+import qualified Data.Yaml as Y
+
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -58,6 +61,18 @@ instance Ord Permission where
     compare (Positive x) (Negative y) = compare x y
     compare (Negative x) (Positive y) = compare x y
     compare (Negative x) (Negative y) = compare x y
+instance FromJSON Permission where
+    parseJSON (Y.String v) = case T.head v of
+        '~' -> do
+            let path = T.splitOn "." (T.tail v)
+            return $ Negative (desc path)
+        _   -> do
+            let path = T.splitOn "." v
+            return $ Positive (desc path)
+      where desc xs = case last xs of
+                "*" -> Wildcard (PermPath (init xs))
+                _   -> Precise (PermPath xs)
+    parseJSON _ = error "Permission must be a string"
 
 checkAllOr :: Bool -> PermPath -> [[Permission]] -> Bool
 checkAllOr def p xs = fromMaybe def (checkAll p xs)
