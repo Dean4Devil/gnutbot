@@ -19,16 +19,23 @@ module Gnut.Config
     , ChannelConfig
     , channelAccess
 
+    -- Plugin configuration and lenses
+    , PluginConfig
+    , load
+    , config
+
     -- Top-level and lenses
     , Config
     , connection
     , roles
     , access
     , channels
+    , plugins
 
     , Roles
     , AccessConfig
     , PerChannelConfig
+    , PerPluginConfig
     )
     where
 
@@ -69,11 +76,26 @@ makeLenses ''ChannelConfig
 
 type PerChannelConfig = Map.HashMap Text ChannelConfig
 
+data PluginLoad = Disabled -- Deny loading this Plugin in any channel
+                | Inactive -- Don't load this plugin for any channel by default
+                | Active   -- Load plugin for every channel by default but allow unloading.
+                | Always   -- Force loading. Pluin can not be unloaded.
+    deriving (Eq, Show, Ord)
+
+data PluginConfig = PluginConfig
+    { _load :: PluginLoad
+    , _config :: Map.HashMap Text Y.Value
+    } deriving (Eq, Show)
+makeLenses ''PluginConfig
+
+type PerPluginConfig = Map.HashMap Text PluginConfig
+
 data Config = Config
     { _connection :: ConnectionConfig
     , _roles :: Roles
     , _access :: AccessConfig
     , _channels :: PerChannelConfig
+    , _plugins :: PerPluginConfig
     } deriving (Eq, Show)
 makeLenses ''Config
 
@@ -106,6 +128,20 @@ instance FromJSON UserAccessConfig where
 instance FromJSON ChannelConfig where
     parseJSON (Y.Object v) = ChannelConfig
         <$> (v .:? "access" .!= Map.empty)
+    parseJSON _ = error "Bad channel config"
+
+instance FromJSON PluginLoad where
+    parseJSON (Y.String v) = return $ case T.toLower v of
+        "always"   -> Always
+        "active"   -> Active
+        "inactive" -> Inactive
+        "disabled" -> Disabled
+
+instance FromJSON PluginConfig where
+    parseJSON (Y.Object v) = PluginConfig
+        <$> (v .:? "load" .!= Active)
+        <*> (v .:? "config" .!= Map.empty)
+    parseJSON _ = error "Bad plugin config"
 
 instance FromJSON Config where
     parseJSON (Y.Object v) = Config
@@ -113,6 +149,7 @@ instance FromJSON Config where
         <*> (v .:? "roles" .!= Map.empty)
         <*> (v .:? "access" .!= Map.empty)
         <*> (v .:? "channels" .!= Map.empty)
+        <*> (v .:? "plugins" .!= Map.empty)
     parseJSON _ = error "Invalid Config"
 
 parseConfig :: FilePath -> IO (Maybe Config)
