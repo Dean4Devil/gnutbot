@@ -58,6 +58,7 @@ library
                  , Gnut.Command.Xmpp
                  , Gnut.Tui
                  , Gnut.Command.Tui
+                 , Gnut.Permission
 
     -- LANGUAGE extensions used by modules in this package.
     default-extensions: OverloadedStrings

@@ -41,32 +41,8 @@ import Data.Text (Text)
 
 eventLoop :: Gnut ()
 eventLoop = do
-    forkIO $ xmppLoop . globalHndl <$> get
-    tuiLoop
-
-{-
- -withGnut :: FilePath -> IO ()
- -withGnut configpath = do
- -    config <- fromJust <$> parseConfig configpath
- -    sess <- setupSession config
- -    hndl <- setupAll sess
- -
- -    let gnuts = GnutS (fromList []) hndl sess
- -
- -    _ <- runGnut config gnuts eventLoop
- -
- -    return ()
- -
- -eventLoop :: Gnut ()
- -eventLoop = do
- -    s <- get
- -    let se = gnutSession s
- -        hndl = globalHndl s
- -    forever $ do
- -        msg <- getMessage se
- -        hndl msg
- -    return ()
- -}
+    --forkIO $ xmppLoop . globalHndl <$> get
+    liftIO $ tuiLoop
 
 setupAll :: Session -> IO (Message -> IO ())
 setupAll sess = do
@@ -75,7 +51,6 @@ setupAll sess = do
     actuate network
     return fire
 
-
 setupNetwork :: Session -> AddHandler Message -> IO EventNetwork
 setupNetwork sess esmsg = compile $ do
     emsg <- fromAddHandler esmsg
@@ -83,12 +58,3 @@ setupNetwork sess esmsg = compile $ do
     let ecmd = filterJust $ apply parseMessageB emsg
 
     reactimate $ fmap print ecmd
-    reactimate $ fmap (evalCommand sess) ecmd
-
-evalCommand :: Session -> Command -> IO ()
-evalCommand sess ("^Hai", m) = 
-        void (X.sendMessage (fromJust (answerIM [MessageBody Nothing "Hai!" ] m)) sess)
-evalCommand sess ("^HowDoing", m) =
-        void (X.sendMessage (fromJust (answerIM [MessageBody Nothing "Baby steps...." ] m)) sess)
-evalCommand sess (_, m) =
-        void (X.sendMessage (fromJust (answerIM [MessageBody Nothing "I don't know that command, sorry."] m)) sess)
