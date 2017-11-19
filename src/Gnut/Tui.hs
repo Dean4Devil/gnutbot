@@ -27,7 +27,8 @@ tuiLoop :: IO ()
 tuiLoop = loop
     where
     loop = do
-        putStrLn "λ "
+        putStr "λ "
         hFlush stdout
         l <- getLine
         putStrLn l
+        loop

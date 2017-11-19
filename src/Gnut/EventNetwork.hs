@@ -1,5 +1,5 @@
 module Gnut.EventNetwork
-    ( 
+    ( globalEventNetwork
     )
     where
 
@@ -10,20 +10,45 @@ import Reactive.Banana.Frameworks
 import Reactive.Banana.Combinators
 
 import Network.Xmpp
+import Network.Xmpp.IM
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 
-data GnutEvent = Message | (Text, [Text])
+globalEventNetwork :: Gnut (MomentIO ())
+globalEventNetwork = do
+    sess <- gnutSession <$> get
+    messagehndl <- globalHndl <$> get
+    messages <- fromAddHandler messagehndl
 
-globalEventNetwork :: AddHandler Message -> AddHandler (Text, [Text]) -> MomentIO
-globalEventNetwork esxmpp esstdin = do
-    exmpp <- fromAddHandler esxmpp
-    estdin <- fromAddHandler estdin
+    let 
+        ims = filterJust $ apply (pure getIM) messages
+        cmds = filterE isCommand ims
+        joins = filterE isJoin ims
 
-    let eex = apply (pure $ GnutEvent) exmpp
-        ees = apply (pure $ GnutEvent) estdin
+    reactimate $ print <$> messages
+    --reactimate $ TIO.putStrLn . showImBody <$> ims
+    reactimate $ actuallyJoin sess <$ joins
 
-        evs = unionWith (\x,y -> x) ees eex
 
-    
+
+isCommand :: InstantMessage -> Bool
+isCommand (InstantMessage _ _ body) = isCommandBody (head body)
+
+isCommandBody :: MessageBody -> Bool
+isCommandBody (MessageBody _ cont) = T.head cont == '!'
+
+showImBody :: InstantMessage -> Text
+showImBody (InstantMessage _ _ body) = showImBody' (head body)
+    where showImBody' (MessageBody _ cont) = cont
+
+isJoin :: InstantMessage -> Bool
+isJoin im = head bs == "!join"
+    where b = showImBody im
+          bs = T.words b
+
+actuallyJoin :: Session -> IO ()
+actuallyJoin sess = do
+        _ <- sendPresence (Presence Nothing (Just $ parseJid "gnut@paranoidlabs.org") (Just $ parseJid "test2@chat.paranoidlabs.org/gnut") Nothing Available [] []) sess
+        return ()

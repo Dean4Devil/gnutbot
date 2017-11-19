@@ -41,11 +41,10 @@ sendMessage m = do
     s <- G.gnutSession <$> G.get
     liftIO $ void $ Network.Xmpp.sendMessage m s
 
-xmppLoop :: Handler Message -> G.Gnut ()
-xmppLoop sink = loop
+xmppLoop :: Session -> Handler Message -> IO ()
+xmppLoop sess sink = loop
     where
     loop = do
-        s <- G.gnutSession <$> G.get
-        l <- liftIO $ getMessage s
-        liftIO $ sink l
+        m <- getMessage sess
+        _ <- sink m
         loop

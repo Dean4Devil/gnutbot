@@ -11,7 +11,6 @@ module Gnut
     , getMessage
 
     , Command
-    , setupNetwork
     , setupAll
     )
     where
@@ -21,6 +20,7 @@ import Gnut.Config
 import Gnut.Xmpp
 import Gnut.Command.Xmpp
 import Gnut.Tui
+import Gnut.EventNetwork
 
 
 import Reactive.Banana.Frameworks
@@ -38,23 +38,3 @@ import Network.Xmpp as X
 import Network.Xmpp.IM
 
 import Data.Text (Text)
-
-eventLoop :: Gnut ()
-eventLoop = do
-    --forkIO $ xmppLoop . globalHndl <$> get
-    liftIO $ tuiLoop
-
-setupAll :: Session -> IO (Message -> IO ())
-setupAll sess = do
-    (addHandler, fire) <- newAddHandler
-    network <- setupNetwork sess addHandler
-    actuate network
-    return fire
-
-setupNetwork :: Session -> AddHandler Message -> IO EventNetwork
-setupNetwork sess esmsg = compile $ do
-    emsg <- fromAddHandler esmsg
-
-    let ecmd = filterJust $ apply parseMessageB emsg
-
-    reactimate $ fmap print ecmd

@@ -1,11 +1,26 @@
 module Gnut.Plugin
-    ( Plugin(..)
+    ( Plugin
     )
     where
 
 import Gnut.Types
 
-data Plugin = Plugin
-    { pFilter :: Message -> Bool
-    , pBody :: Message -> Gnut ()
-    }
+import Network.Xmpp hiding (Plugin)
+
+-- load plugin:
+-- load :: PluginConfig -> 
+--
+-- Plugin loader:
+-- map over all plugins:
+--      1. decide if plugins needs to be loaded
+--      2. if so load plugin with config & load hooks
+
+-- Plugin: Really just a function Message -> Gnut ()
+-- Gets every message that Gnut receives. Each Plugin does it's own
+-- filtering.
+-- (TODO: Later build PluginStores that do better filtering? e.g IMPlugin :: Plugin)
+
+
+type Plugin = Message -> Gnut ()
+
+
