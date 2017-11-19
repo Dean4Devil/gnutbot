@@ -5,15 +5,15 @@ module Gnut.Config
 
     -- Connection Configuration and lenses
     , ConnectionConfig
-    , connHost
-    , connUser
-    , connDomain
-    , connPassword
+    , host
+    , user
+    , domain
+    , password
 
     -- Per-User and lenses
     , UserAccessConfig
-    , userRoles
-    , userPerms
+    , memberof
+    , permissions
 
     -- Channel-specific and lenses
     , ChannelConfig
@@ -54,16 +54,16 @@ import Data.Yaml (FromJSON(..), (.:), (.:?), (.!=))
 type Roles = Map.HashMap Text [Permission]
 
 data ConnectionConfig = ConnectionConfig
-    { _connHost     :: Text
-    , _connUser     :: Text
-    , _connDomain   :: Text
-    , _connPassword :: Text
+    { _host     :: Text
+    , _user     :: Text
+    , _domain   :: Text
+    , _password :: Text
     } deriving (Eq, Show)
 makeLenses ''ConnectionConfig
 
 data UserAccessConfig = UserAccessConfig
-    { _userRoles :: [Text]
-    , _userPerms :: [Permission]
+    { _memberof :: [Text]
+    , _permissions :: [Permission]
     } deriving (Eq, Show)
 makeLenses ''UserAccessConfig
 
