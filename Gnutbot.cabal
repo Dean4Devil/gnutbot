@@ -55,9 +55,6 @@ library
     other-modules: Gnut.Types
                  , Gnut.Config
                  , Gnut.Xmpp
-                 , Gnut.Command.Xmpp
-                 , Gnut.Tui
-                 , Gnut.Command.Tui
                  , Gnut.Permission
                  , Gnut.Plugin
                  , Gnut.EventNetwork
