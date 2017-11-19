@@ -1,15 +1,23 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Gnut.Types
     ( Gnut
-    , GnutS(..)
+
+    , GnutState(..)
+    , session
+    , config
+
+    , PluginContext
+    , globalconfig
+    , loaded
+    , userjidmap
+
     , runGnut
-    , ask
-    , local
     , get
     , put
     )
     where
 
-import Gnut.Config
+import Gnut.Config hiding (config)
 import Gnut.Permission
 
 import Control.Monad.Trans.Class
@@ -17,27 +25,32 @@ import Control.Monad.Trans.State
 import qualified Control.Monad.Trans.Reader as R
 import Control.Monad.IO.Class
 
+import Control.Concurrent.MVar
+import Control.Lens
+
 import Reactive.Banana.Frameworks
 
-import Network.Xmpp
+import Network.Xmpp (Session, Message, Jid)
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Data.Text (Text)
 
-type Gnut a = StateT GnutS (R.ReaderT Config IO) a
+type Gnut a = StateT GnutState a
 
-runGnut :: Config -> GnutS -> Gnut a -> IO (a, GnutS)
-runGnut c s g = R.runReaderT (runStateT g s) c
+runGnut = runStateT
 
--- Lift ReaderT up
-ask :: Gnut Config
-ask = lift R.ask
-
-local :: (Config -> Config) -> Gnut a -> Gnut a
-local f = mapStateT (R.local f)
-
-data GnutS = GnutS
-    { globalHndl :: Handler Message
-    , gnutSession :: Session
+data GnutState = GnutState
+    { _session :: Session
+    , _config :: MVar Config
     }
+makeLenses ''GnutState
+
+type Plugin = Message -> IO ()
+
+data PluginContext = PluginContext
+    { _globalconfig :: MVar Config
+    , _loaded       :: Map.HashMap Text Plugin
+    , _userjidmap   :: Map.HashMap Text Jid
+    }
+makeLenses ''PluginContext

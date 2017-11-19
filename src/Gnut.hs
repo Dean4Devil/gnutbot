@@ -1,27 +1,19 @@
 module Gnut
     ( Gnut
     , runGnut
-    , GnutS(..)
-
-    , eventLoop
+    , GnutState(..)
 
     , parseConfig
     , Config(..)
     , setupSession
     , getMessage
-
-    , Command
-    , setupAll
     )
     where
 
 import Gnut.Types
 import Gnut.Config
 import Gnut.Xmpp
-import Gnut.Command.Xmpp
-import Gnut.Tui
 import Gnut.EventNetwork
-
 
 import Reactive.Banana.Frameworks
 import Reactive.Banana.Combinators

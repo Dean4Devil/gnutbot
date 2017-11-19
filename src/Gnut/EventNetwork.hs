@@ -16,10 +16,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 
-globalEventNetwork :: Gnut (MomentIO ())
-globalEventNetwork = do
-    sess <- gnutSession <$> get
-    messagehndl <- globalHndl <$> get
+globalEventNetwork :: AddHandler Message -> MomentIO ()
+globalEventNetwork messagehndl = do
     messages <- fromAddHandler messagehndl
 
     let 
@@ -29,8 +27,6 @@ globalEventNetwork = do
 
     reactimate $ print <$> messages
     --reactimate $ TIO.putStrLn . showImBody <$> ims
-    reactimate $ actuallyJoin sess <$ joins
-
 
 
 isCommand :: InstantMessage -> Bool
