@@ -19,13 +19,13 @@ import qualified Data.Text as T
 
 import Reactive.Banana.Frameworks
 
-import Network.Xmpp
-import Network.Xmpp.IM
-import Network.Xmpp.Internal (TlsBehaviour(..))
+import qualified Network.Xmpp as X
+import qualified Network.Xmpp.IM as X.IM
+import qualified Network.Xmpp.Internal as X.Internal (TlsBehaviour(..))
 
 setupSession :: Config -> IO Session
 setupSession c = do
-    result <- session ("paranoidlabs.org") (Just (const [plain "gnut" Nothing "quailaeQu3ahbei0vaXa"], Nothing)) $ def
+    result <- session c^.connection.domain (Just (const [plain c^.connection.user Nothing c^.connection.password], Nothing)) $ def
         & streamConfigurationL .  tlsBehaviourL .~ RequireTls
         & onConnectionClosedL .~ reconnectSession
     sess <- case result of

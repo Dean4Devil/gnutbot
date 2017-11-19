@@ -1,5 +1,5 @@
 module Gnut.Plugin
-    ( Plugin
+    ( 
     )
     where
 
@@ -19,8 +19,3 @@ import Network.Xmpp hiding (Plugin)
 -- Gets every message that Gnut receives. Each Plugin does it's own
 -- filtering.
 -- (TODO: Later build PluginStores that do better filtering? e.g IMPlugin :: Plugin)
-
-
-type Plugin = Message -> Gnut ()
-
-
