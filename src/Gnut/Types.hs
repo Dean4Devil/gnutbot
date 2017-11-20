@@ -19,6 +19,7 @@ module Gnut.Types
 
 import Gnut.Config hiding (config)
 import Gnut.Permission
+import Gnut.Xmpp
 
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State
@@ -29,8 +30,6 @@ import Control.Concurrent.MVar
 import Control.Lens
 
 import Reactive.Banana.Frameworks
-
-import Network.Xmpp (Session, Message, Jid)
 
 import qualified Data.HashMap.Lazy as Map
 
@@ -54,3 +53,21 @@ data PluginContext = PluginContext
     , _userjidmap   :: Map.HashMap Text Jid
     }
 makeLenses ''PluginContext
+
+{-
+ -data AuthContext = AuthContext
+ -    { 
+ -    }
+ -
+ -type Roles = Map.HashMap Text [Permission]
+ -
+ -data AuthObject = AuthObject
+ -    { _globalRoles :: Roles
+ -    , _globalPerms :: [Permission]
+ -    , _contextRoles :: Context -> Roles
+ -    , _contextPerms :: Context -> [Permission]
+ -    }
+ -makeLenses ''AuthObject
+ -
+ -type AuthUser = Map.HashMap Jid AuthObject
+ -}

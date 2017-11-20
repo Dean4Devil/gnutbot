@@ -4,8 +4,7 @@ module Gnut.Plugin
     where
 
 import Gnut.Types
-
-import Network.Xmpp hiding (Plugin)
+import Gnut.Xmpp
 
 -- load plugin:
 -- load :: PluginConfig -> 
