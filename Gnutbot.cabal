@@ -58,6 +58,7 @@ library
                  , Gnut.Permission
                  , Gnut.Plugin
                  , Gnut.EventNetwork
+                 , Gnut.Tui
 
     -- LANGUAGE extensions used by modules in this package.
     default-extensions: OverloadedStrings
