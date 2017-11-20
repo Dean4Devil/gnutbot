@@ -16,6 +16,7 @@ import Gnut.Types
 import Gnut.Config
 import Gnut.Xmpp
 import Gnut.EventNetwork
+import Gnut.Tui
 
 import Reactive.Banana.Frameworks
 import Reactive.Banana.Combinators
