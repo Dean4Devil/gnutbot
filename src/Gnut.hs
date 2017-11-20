@@ -7,6 +7,8 @@ module Gnut
     , Config(..)
     , setupSession
     , getMessage
+
+    , tuiLoop
     )
     where
 
