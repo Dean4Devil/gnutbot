@@ -4,6 +4,7 @@ module Gnut.Tui
     where
 
 import Gnut.Xmpp
+import Gnut.DynamicLoad
 
 import Prelude hiding (putStr, putStrLn, getLine)
 
@@ -27,21 +28,21 @@ import Reactive.Banana
 import Reactive.Banana.Combinators
 import Reactive.Banana.Frameworks
 
-tuiNetwork :: TuiCommands -> AddHandler LoadEvent -> AddHandler Text -> MomentIO ()
+tuiNetwork :: ModuleStore -> AddHandler LoadEvent -> AddHandler Text -> MomentIO ()
 tuiNetwork commands loaderI input = do
     (commandB, commandH) <- newBehavior commands
 
     inputE <- fromAddHandler input
     loaderE <- fromAddHandler loaderI
 
-    let loadB = fmap loadMod commandB
-        unloadB = fmap unloadMod commandB
+    let loadB = fmap loadModule commandB
+        unloadB = fmap unloadModule commandB
 
         (loadE, unloadE) = split loaderE
         load = loadB <@> loadE
         unload = unloadB <@> unloadE
 
-        cmdLookup = fmap lookupM commandB
+        cmdLookup = fmap queryStore commandB
 
         -- TODO split Either Line NoLine
         cmdLine = filterE (/= "") inputE
@@ -104,7 +105,7 @@ sendM sess (jid:text) = case jidFromText jid of
         r <- sendMessage (simpleIM j (T.unwords text)) sess
         return ()
 
-cmdLoadModule :: TuiCommands -> Handler LoadEvent -> [Text] -> IO ()
+cmdLoadModule :: ModuleStore -> Handler LoadEvent -> [Text] -> IO ()
 cmdLoadModule m load [k] = do
     let mod = Map.lookup k m
     case mod of

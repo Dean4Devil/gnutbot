@@ -59,6 +59,7 @@ library
                  , Gnut.Plugin
                  , Gnut.EventNetwork
                  , Gnut.Tui
+                 , Gnut.DynamicLoad
 
     -- LANGUAGE extensions used by modules in this package.
     default-extensions: OverloadedStrings

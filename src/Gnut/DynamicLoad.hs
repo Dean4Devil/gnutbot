@@ -1,11 +1,18 @@
 module Gnut.DynamicLoad
     ( ModuleStore
     , LoadEvent
-    , lookupM
+    , queryStore
     , loadModule
     , unloadModule
     )
     where
+
+import Data.Either
+
+import Data.Text (Text)
+
+import Data.HashMap.Lazy (HashMap)
+import qualified Data.HashMap.Lazy as Map
 
 type Module = [Text] -> IO ()
 type ModName = Text
