@@ -15,7 +15,7 @@ module Gnut
 import Gnut.Types
 import Gnut.Config
 import Gnut.Xmpp
-import Gnut.EventNetwork
+import Gnut.MessageRouter
 import Gnut.Tui
 import Gnut.DynamicLoad
 

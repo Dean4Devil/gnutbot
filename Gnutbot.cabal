@@ -57,7 +57,7 @@ library
                  , Gnut.Xmpp
                  , Gnut.Permission
                  , Gnut.Plugin
-                 , Gnut.EventNetwork
+                 , Gnut.MessageRouter
                  , Gnut.Tui
                  , Gnut.DynamicLoad
 

@@ -1,4 +1,4 @@
-module Gnut.EventNetwork
+module Gnut.MessageRouter
     ( routerNetwork
     , IgnoreEvent
     )
