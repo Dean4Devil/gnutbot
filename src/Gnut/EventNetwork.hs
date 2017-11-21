@@ -23,44 +23,30 @@ ignoreF :: Set Jid -> Message -> Maybe Message
 ignoreF s m@(Message _ (Just jid) _ _ _ [] []) = if jid `Set.member` s then Nothing else Just m
 ignoreF s m@(Message _ Nothing _ _ _ [] []) = Just m
 
-routerNetwork :: Session -> AddHandler Message -> MomentIO ()
-routerNetwork sess source = do
-    messages <- fromAddHandler source
-    (ignore, replaceIgnore) <- newBehavior (ignoreF (Set.singleton $ parseJid "test@paranoidlabs.org"))
+-- Ignore / Unignore
+type IgnoreEvent = Either Jid Jid
 
-    let filtered = filterJust $ apply ignore messages
+routerNetwork :: Set Jid -> AddHandler IgnoreEvent -> AddHandler Message -> MomentIO ()
+routerNetwork ignores ignoreI input = do
+    (ignoreSet, ignoreH) <- newBehavior ignores
 
-        ignoreCmd = filterE isIgnore $ filterE isCommand $ filterJust $ apply (pure getIM) messages
+    inputE <- fromAddHandler input
+    changeIgnoreE <- fromAddHandler ignoreI
 
-        ims = filterJust $ apply (pure getIM) filtered
-        cmds = filterE isCommand ims
+    let ignoreB = fmap ignoreUser ignoreSet
+        unignoreB = fmap unignoreUser ignoreSet
 
-        joins = filterE isJoin cmds
+        (ignoreE, unignoreE) = split changeIgnoreE
+        ignore = ignoreB <@> ignoreE
+        unignore = unignoreB <@> unignoreE
 
-    reactimate $ print <$> filtered
-    reactimate $ actuallyJoin sess <$ joins
+        passed = 
 
-isCommand :: InstantMessage -> Bool
-isCommand (InstantMessage _ _ body) = isCommandBody (head body)
+    reactimate $ ignoreH <@> ignore
+    reactimate $ ignoreH <@> unignore
 
-isCommandBody :: MessageBody -> Bool
-isCommandBody (MessageBody _ cont) = T.head cont == '!'
+ignoreUser :: Set Jid -> Jid -> Set Jid
+ignoreUser s k = Set.insert k s
 
-showImBody :: InstantMessage -> Text
-showImBody (InstantMessage _ _ body) = showImBody' (head body)
-    where showImBody' (MessageBody _ cont) = cont
-
-isJoin :: InstantMessage -> Bool
-isJoin im = head bs == "!join"
-    where b = showImBody im
-          bs = T.words b
-
-isIgnore :: InstantMessage -> Bool
-isIgnore im = head bs == "!ignore"
-    where b = showImBody im
-          bs = T.words b
-
-actuallyJoin :: Session -> IO ()
-actuallyJoin sess = do
-        _ <- sendPresence (Presence Nothing (Just $ parseJid "gnut@paranoidlabs.org") (Just $ parseJid "test@chat.paranoidlabs.org/gnut") Nothing Available [] []) sess
-        return ()
+unignoreUser :: Set Jid -> Jid -> Set Jid
+unignoreUser s k = Set.delete k s
