@@ -18,4 +18,4 @@ main = do
     updateGlobalLogger "Pontarius.Xmpp" $ setLevel DEBUG
     sess <- setupSession config
 
-    tuiLoop sess
+    run sess

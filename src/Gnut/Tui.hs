@@ -1,5 +1,5 @@
 module Gnut.Tui
-    ( tuiLoop
+    ( tuiNetwork
     )
     where
 
@@ -65,55 +65,3 @@ tuiNetwork commands loaderI input = do
 
     reactimate $ commandH <$> load
     reactimate $ commandH <$> unload
-
-tuiLoop :: Session -> IO ()
-tuiLoop sess = do
-    (lineH, send) <- newAddHandler
-    (loadH, load) <- newAddHandler
-
-    let avail = Map.singleton "echo" print
-
-    let cmds = Map.fromList [ ("send", sendM sess)
-                            , ("quit", \_ -> return ())
-                            , ("load", cmdLoadModule avail load)
-                            , ("unload", cmdUnloadModule load)
-                            ]
-
-
-    network <- compile $ tuiNetwork cmds loadH lineH
-    actuate network
-
-    loopdiloop send network
-
-loopdiloop :: Handler Text -> EventNetwork -> IO ()
-loopdiloop fire network = loop
-  where
-    loop = do
-        putStr "> "
-        hFlush stdout
-        hSetBuffering stdin NoBuffering
-        l <- getLine
-        fire l
-        when (l /= "quit") loop
-
-sendM :: Session -> [Text] -> IO ()
-sendM sess [] = putStrLn "send <jid> <message>"
-sendM sess [x] = putStrLn "send <jid> <message>"
-sendM sess (jid:text) = case jidFromText jid of
-    Nothing -> putStrLn "Invalid JID"
-    Just j -> do
-        r <- sendMessage (simpleIM j (T.unwords text)) sess
-        return ()
-
-cmdLoadModule :: ModuleStore -> Handler LoadEvent -> [Text] -> IO ()
-cmdLoadModule m load [k] = do
-    let mod = Map.lookup k m
-    case mod of
-        Just mod' -> load $ Left (k, mod')
-        Nothing -> putStrLn $ T.append "No such module: " k
-cmdLoadModule m load [] = putStrLn "load <modulename>"
-cmdLoadModule m load _ = putStrLn "Module options are not supported yet, sorry."
-
-cmdUnloadModule :: Handler LoadEvent -> [Text] -> IO ()
-cmdUnloadModule load [k] = load $ Right k
-cmdUnloadModule load _ = putStrLn "unload <modulename>"
