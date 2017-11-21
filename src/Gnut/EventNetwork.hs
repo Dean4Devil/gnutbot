@@ -1,5 +1,6 @@
 module Gnut.EventNetwork
     ( routerNetwork
+    , IgnoreEvent
     )
     where
 
@@ -20,8 +21,8 @@ import qualified Data.Text.IO as TIO
 -- Set of ignored JIDs. If the Sender is in the Set all events are directly
 -- ignored
 ignoreF :: Set Jid -> Message -> Maybe Message
-ignoreF s m@(Message _ (Just jid) _ _ _ [] []) = if jid `Set.member` s then Nothing else Just m
-ignoreF s m@(Message _ Nothing _ _ _ [] []) = Just m
+ignoreF s m@(Message _ (Just jid) _ _ _ _ _) = if jid `Set.member` s then Nothing else Just m
+ignoreF s m@(Message _ Nothing    _ _ _ _ _) = Just m
 
 -- Ignore / Unignore
 type IgnoreEvent = Either Jid Jid
@@ -40,10 +41,13 @@ routerNetwork ignores ignoreI input = do
         ignore = ignoreB <@> ignoreE
         unignore = unignoreB <@> unignoreE
 
-        passed = 
+        checkIgnore = fmap ignoreF ignoreSet
+        passed = apply checkIgnore inputE
 
-    reactimate $ ignoreH <@> ignore
-    reactimate $ ignoreH <@> unignore
+    reactimate $ print <$> passed
+
+    reactimate $ ignoreH <$> ignore
+    reactimate $ ignoreH <$> unignore
 
 ignoreUser :: Set Jid -> Jid -> Set Jid
 ignoreUser s k = Set.insert k s
