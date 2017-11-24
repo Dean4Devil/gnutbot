@@ -41,7 +41,7 @@ cabal-version:       >=1.10
 
 executable gnut
     main-is: bin/Gnut.hs
-    build-depends: base >= 4.9 && <4.10
+    build-depends: base >= 4.10 && <4.11
                  , Gnutbot
                  , hslogger
                  , text
@@ -65,7 +65,7 @@ library
     default-extensions: OverloadedStrings
 
     -- Other library packages from which modules are imported.
-    build-depends: base >= 4.9 && <4.10
+    build-depends: base >= 4.10 && <4.11
                  , hslogger
                  , pontarius-xmpp >= 0.5.4
                  , network

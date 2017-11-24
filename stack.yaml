@@ -6,4 +6,8 @@ packages:
 extra-deps:
 - stringprep-1.0.0
 
-resolver: lts-9.12
+ghc-options:
+  $everything: -dynamic -shared -fllvm -fPIC
+
+resolver: nightly-2017-11-20
+#resolver: lts-9.14
