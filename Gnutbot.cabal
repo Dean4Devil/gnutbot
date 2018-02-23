@@ -70,6 +70,7 @@ library
                  , pontarius-xmpp >= 0.5.4
                  , network
                  , text
+                 , text-show
                  , reactive-banana
                  , data-default
                  , yaml
