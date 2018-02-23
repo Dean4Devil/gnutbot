@@ -8,7 +8,7 @@ Stuff I want for v0.1.0.0:
 - [ ] Global FRP based event tree
 - [ ] RBAC based authorization
 - [ ]   YAML backend authorization
-- [ ] Gracefully degradation if now allowed to access JIDs.
+- [ ] Gracefully degradation if not allowed to access JIDs.
 - [ ] Initial Commands
 - [ ]   ping/pong command with latency check
 - [ ]   echo command
