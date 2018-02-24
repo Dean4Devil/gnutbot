@@ -1,13 +1,15 @@
 flags: {}
+ghc-options: null
 packages:
-- '.'
-- '../pontarius-xmpp/'
-- '../reactive-banana/reactive-banana/'
+- .
+- ../pontarius-xmpp/
+system-ghc: true
 extra-deps:
+- conduit-1.3.0
+- conduit-extra-1.3.0
+- ranges-0.2.4
+- resourcet-1.2.0
 - stringprep-1.0.0
-
-ghc-options:
-  $everything: -dynamic -shared -fllvm -fPIC
-
-resolver: nightly-2017-11-20
-#resolver: lts-9.14
+- text-1.2.2.1
+- xml-conduit-1.8.0
+resolver: lts-10.4
