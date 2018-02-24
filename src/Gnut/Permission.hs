@@ -22,21 +22,6 @@ import qualified Data.Yaml as Y
 import Data.Text (Text)
 import qualified Data.Text as T
 
-data PermissionT a
-    = Node a [PermissionT a]
-    | Leaf PermValue a
-    deriving (Eq)
-
-data PermValue a
-    = Positive PermPrecision a
-    | Negative PermPrecision a
-    deriving (Eq)
-
-instance Show PermTree where
-    show Wildcard = "*"
-    show (Precise p) = T.unpack p
-    show (PermTree p f) = map (T.unpack p ++ "." ++ show) f
-
 -- Hidden behind newtype for custom Show & Ord implementations
 newtype PermPath = PermPath [Text]
     deriving (Eq)
