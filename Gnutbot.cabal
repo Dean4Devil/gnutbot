@@ -37,11 +37,11 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 
 -- Constraint on the version of Cabal needed to build this package.
-cabal-version:       >=1.10
+cabal-version:       >=2.0
 
 executable gnut
     main-is: bin/Gnut.hs
-    build-depends: base >= 4.10 && <4.11
+    build-depends: base >= 4.11 && <4.12
                  , Gnutbot
                  , hslogger
                  , text
@@ -52,20 +52,20 @@ library
     -- Modules exported by the library.
     exposed-modules: Gnut
     -- Modules included in this library but not exported.
-    other-modules: Gnut.Types
-                 , Gnut.Config
-                 , Gnut.Xmpp
-                 , Gnut.Permission
-                 , Gnut.Plugin
-                 , Gnut.MessageRouter
-                 , Gnut.Tui
-                 , Gnut.DynamicLoad
+    -- other-modules: Gnut.Types
+      --            , Gnut.Config
+        --          , Gnut.Xmpp
+          --        , Gnut.Permission
+            --      , Gnut.Plugin
+              --    , Gnut.MessageRouter
+                --  , Gnut.Tui
+                 -- , Gnut.DynamicLoad
 
     -- LANGUAGE extensions used by modules in this package.
     default-extensions: OverloadedStrings
 
     -- Other library packages from which modules are imported.
-    build-depends: base >= 4.10 && <4.11
+    build-depends: base >= 4.11 && <4.12
                  , hslogger
                  , pontarius-xmpp >= 0.5.4
                  , network
