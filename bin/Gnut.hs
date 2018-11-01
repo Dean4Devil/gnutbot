@@ -14,8 +14,10 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 
 main = do
-    config <- fromJust <$> parseConfig "/home/dqubed/.config/gnut/config.yml"
-    updateGlobalLogger "Pontarius.Xmpp" $ setLevel DEBUG
-    sess <- setupSession config
+    {-
+     -config <- fromJust <$> parseConfig "/home/glr/.config/gnut/config.yml"
+     -updateGlobalLogger "Pontarius.Xmpp" $ setLevel DEBUG
+     -sess <- setupSession config
+     -}
 
-    run sess
+    run
