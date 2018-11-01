@@ -27,6 +27,28 @@ ignoreF s m@(Message _ Nothing    _ _ _ _ _) = Just m
 -- Ignore / Unignore
 type IgnoreEvent = Either Jid Jid
 
+type Filter a = Behavior (a -> Bool)
+type Log a = Behavior (a -> a)
+
+-- Filter a is `and` each filter
+--
+-- Filter is a Behaviour over (a -> Bool)
+--
+-- filtering JIDs is `filterApply (Filter JID)`
+--
+-- filtering messages is `filterApply (Filter message)`
+-- 
+-- logging messages is accumB. (accumE but we don't want the log that very
+-- moment)
+
+filterNetwork :: Behavior (Jid -> Bool) -> AddHandler IgnoreEvent -> AddHandler Message -> MomentIO ()
+filterNetwork fltr ignoreI msgI = do
+    ignoreE <- fromAddHandler ignoreI
+    msgE <- fromAddHandler msgI
+
+    let 
+
+
 routerNetwork :: Set Jid -> AddHandler IgnoreEvent -> AddHandler Message -> MomentIO ()
 routerNetwork ignores ignoreI input = do
     (ignoreSet, ignoreH) <- newBehavior ignores
