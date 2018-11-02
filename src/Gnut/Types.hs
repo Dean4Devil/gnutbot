@@ -1,12 +1,26 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Gnut.Types where
 
-import Reactive.Banana
-import Reactive.Banana.Frameworks
+import Network.Xmpp.Internal
 
-data Message = Message
-             { jid :: String
-             , content :: String
-             } deriving (Show, Eq, Ord)
+class GnutModule m where
+    --startupModule :: IO m
+    stanzaFilter :: m -> Stanza -> Bool
+    handleStanza :: m -> Stanza -> IO ()
 
-message j c = Message {jid=j, content=c}
+class GnutIMModule m where
+    --startupIMModule :: IO m
+    messageFilter :: m -> InstantMessage -> Bool
+    handleMessage :: m -> InstantMessage -> IO ()
 
+instance GnutIMModule a => GnutModule a where
+    --startupModule = startupIMModule
+
+    stanzaFilter mod (MessageS m) = case getIM m of
+        Nothing -> False
+        Just m -> messageFilter mod m
+
+    handleStanza mod (MessageS m) = case getIM m of
+        Nothing -> return ()
+        Just m -> handleMessage mod m

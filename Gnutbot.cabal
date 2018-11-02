@@ -57,6 +57,7 @@ library
                  , Gnut.Types
                  , Gnut.Permissions
                  , Gnut.Modules.Echo
+                 , Gnut.Modules.Hello
 
     -- LANGUAGE extensions used by modules in this package.
     default-extensions: OverloadedStrings
@@ -75,6 +76,7 @@ library
                  , transformers
                  , containers
                  , unordered-containers
+                 , pontarius-xmpp
 
     -- Directories containing source files.
     hs-source-dirs:      src

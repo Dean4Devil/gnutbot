@@ -1,3 +1,4 @@
+{-# LANGUAGE QuasiQuotes #-}
 module Gnut (run) where
 
 import System.IO
@@ -7,17 +8,22 @@ import Reactive.Banana
 import Reactive.Banana.Frameworks
 
 import Data.Text (Text)
+import qualified Data.Text as T
+
+import Network.Xmpp.Internal
 
 import Gnut.Router
+import Gnut.Types
+import Gnut.Permissions
 
 run :: IO ()
 run = do
     msgsrc <- newAddHandler
-    network <- setupRouterNetwork purePerm pureMods (addHandler msgsrc)
+    network <- setupRouterNetwork purePerm (addHandler msgsrc)
     actuate network
     eventLoop msgsrc
 
-eventLoop :: (EventSource Message) -> IO ()
+eventLoop :: (EventSource Stanza) -> IO ()
 eventLoop esmsg = loop
     where
     loop = do
@@ -25,16 +31,16 @@ eventLoop esmsg = loop
         hFlush stdout
         s <- getLine
         if s == "" then do
-            putStrLn "Commands: d <msg>|o <msg>|quit"
+            putStrLn "Commands: d <msg>|o <msg>|q"
             loop
         else do
             let (x:xs) = words s
             case x of
-                "d" -> fire esmsg $ message "dean" $ unwords xs
-                "o" -> fire esmsg $ message "other" $ unwords xs
-                "quit" -> return ()
-                _ -> putStrLn "Commands: d <msg>|o <msg>|quit"
-            when (x /= "quit") loop
+                "q" -> return ()
+                "o" -> fire esmsg $ MessageS $ simpleIM [jid|cli@gnut|] (T.pack $ unwords xs)
+                "d" -> fire esmsg $ MessageS $ simpleIM [jid|cli@gnut|] (T.pack $ unwords xs)
+                _ -> putStrLn "Commands: d <msg>|o <msg>|q"
+            when (x /= "q") loop
 
 type EventSource a = (AddHandler a, a -> IO ())
 

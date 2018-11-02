@@ -1,6 +1,9 @@
+{-# LANGUAGE QuasiQuotes #-}
 module Gnut.Module where
 
-import Gnut.Types
+import Prelude hiding (lookup)
+
+import Network.Xmpp.Internal
 
 import Data.Map (Map)
 import qualified Data.Map as M
@@ -8,25 +11,41 @@ import qualified Data.Map as M
 import Reactive.Banana
 import Reactive.Banana.Frameworks
 
-import qualified Gnut.Modules.Echo as Echo
+import Gnut.Types
+import Gnut.Modules.Hello
 
-type Modules = Map String (Message -> IO ())
-type ModuleStore = Behavior (Message -> IO ())
 
-register :: String -> (Message -> IO ()) -> Modules -> Modules
-register = M.insert
+type ModuleAction = (Stanza -> IO ())
+type Modules = Map Jid ModuleAction
+type ModuleStore = Behavior Modules
+type ModuleHandler = Handler Modules
 
-unregister :: String -> Modules -> Modules
-unregister = M.delete
+findModule :: Stanza -> Jid
+findModule s = [jid|hello@gnut|]
 
-runMod :: Modules -> Message -> IO ()
-runMod mods m = do
-    let c = content m
-        a = M.lookup c mods
-    case a of
-        Just f -> f m
-        Nothing -> return ()
+startModules = M.fromList [ ([jid|hello@gnut|], handleStanza Hello) ]
 
-pureMods :: ModuleStore
-pureMods = runMod <$> pure m
-  where m = M.fromList [("hai", \_ -> putStrLn "Hello there"), Echo.plugin]
+lookup :: Modules -> Jid -> Maybe ModuleAction
+lookup m j = M.lookup j m
+
+lookupS :: Modules -> Stanza -> Maybe ModuleAction
+lookupS m s = lookup m $ findModule s
+
+applyMod :: Modules -> Stanza -> Maybe (IO ())
+applyMod m s = do
+    mod <- lookupS m s
+    return $ mod s
+
+keys = M.keys
+
+setupModuleStore :: ModuleHandler -> (AddHandler Stanza) -> IO ()
+setupModuleStore h input = do
+    nw <- setupModuleNetwork h input
+    actuate nw
+    return ()
+
+setupModuleNetwork :: ModuleHandler -> (AddHandler Stanza) -> IO (EventNetwork)
+setupModuleNetwork h input = compile $ do
+    emsg <- fromAddHandler input
+
+    return ()
