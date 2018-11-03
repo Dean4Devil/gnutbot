@@ -1,8 +1,13 @@
 {-# LANGUAGE QuasiQuotes #-}
-module Gnut (run) where
+module Gnut
+    ( run
+    , parseConfig
+    ) where
 
 import System.IO
 import Control.Monad (when)
+
+import Control.Lens
 
 import Reactive.Banana
 import Reactive.Banana.Frameworks
@@ -12,19 +17,25 @@ import qualified Data.Text as T
 
 import Network.Xmpp.Internal
 
+import Gnut.Config
 import Gnut.Xmpp
 import Gnut.Router
 import Gnut.Module
 import Gnut.Types
 import Gnut.Permissions
 
-run :: IO ()
-run = do
+run :: Config -> IO ()
+run c = do
     msgsrc <- newAddHandler
     pms <- newAddHandler
+
     session <- setupSession "paranoidlabs.org" (Just (const [plain ("gnut") Nothing ("quailaeQu3ahbei0vaXa")], Nothing))
+
+    let perms = userPermsFromAccessConfig $ c^.access
+    print perms
+
     xmpp <- setupXmppNetwork session (addHandler msgsrc) (dmChannelMap (fire pms))
-    pmrouter <- setupRouterNetwork (addHandler pms) (fire msgsrc) pureModuleStore
+    pmrouter <- setupRouterNetwork (addHandler pms) (fire msgsrc) pureModuleStore perms
 
     actuate xmpp
     actuate pmrouter

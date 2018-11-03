@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import System.Environment.XDG.BaseDir
+import System.FilePath.Posix
+import System.Directory
+
 import Gnut
 import System.Log.Logger
 
@@ -14,10 +18,9 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 
 main = do
-    {-
-     -config <- fromJust <$> parseConfig "/home/glr/.config/gnut/config.yml"
-     -updateGlobalLogger "Pontarius.Xmpp" $ setLevel DEBUG
-     -sess <- setupSession config
-     -}
 
-    run
+    configDirectory <- getUserConfigDir "gnut"
+
+    config <- fromJust <$> parseConfig (configDirectory ++ "/config.yml")
+
+    run config

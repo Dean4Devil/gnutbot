@@ -16,7 +16,7 @@ module Gnut.Permissions
 import Reactive.Banana
 import Reactive.Banana.Frameworks
 
-import Network.Xmpp.Internal
+import Network.Xmpp.Internal hiding (jid)
 
 import Data.List
 import Data.Map.Lazy hiding (filter)
@@ -25,10 +25,13 @@ import Data.Maybe
 import Data.Yaml (FromJSON(..))
 import qualified Data.Yaml as Y
 
+import qualified Data.HashMap.Lazy as Map
+
 import Data.Text (Text)
 import qualified Data.Text as T
 
 type Permissions = [Permission]
+
 
 -- Hidden behind newtype for custom Show & Ord implementations
 newtype PermPath = PermPath [Text]

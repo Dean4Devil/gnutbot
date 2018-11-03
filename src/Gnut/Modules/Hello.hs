@@ -7,6 +7,8 @@ import System.IO
 import Network.Xmpp.Internal hiding (Plugin)
 import Network.Xmpp.IM
 
+import qualified Data.Text as T
+
 import Gnut.Types
 import Gnut.Permissions
 
@@ -20,4 +22,4 @@ helloFilter (MessageBody _ "!hai") = True
 helloFilter (MessageBody _ _) = False
 
 
-handleMessage _ _ = pure [MessageBody { bodyLang = Nothing, bodyContent = "Hello there!" }]
+handleMessage _ p = pure [MessageBody { bodyLang = Nothing, bodyContent = (T.concat ["Hello there! Your perms: ", T.pack (show p)]) }]
