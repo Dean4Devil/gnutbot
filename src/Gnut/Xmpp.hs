@@ -99,7 +99,7 @@ sendStanza_ session stanza = do
     _ <- sendStanza stanza session
     return ()
 
--- TODO
+-- FIXME
 getChannel :: Stanza -> Channel
 getChannel s = DirectMessage
 

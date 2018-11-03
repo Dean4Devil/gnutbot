@@ -1,26 +1,55 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
 module Gnut.Types where
 
-import Network.Xmpp.Internal
+import Gnut.Permissions
 
-class GnutModule m where
-    --startupModule :: IO m
-    stanzaFilter :: m -> Stanza -> Bool
-    handleStanza :: m -> Stanza -> IO ()
+import Data.Text (Text)
+import qualified Data.Text as T
 
-class GnutIMModule m where
-    --startupIMModule :: IO m
-    messageFilter :: m -> InstantMessage -> Bool
-    handleMessage :: m -> InstantMessage -> IO ()
+import Network.Xmpp.Internal hiding (Plugin)
 
-instance GnutIMModule a => GnutModule a where
-    --startupModule = startupIMModule
+import Reactive.Banana.Frameworks
 
-    stanzaFilter mod (MessageS m) = case getIM m of
+data Plugin =
+     Plugin { pluginName :: String
+            , filterPlugin :: Stanza -> Bool
+            , runPlugin :: Stanza -> [Permissions] -> Handler Stanza -> IO ()
+            }
+
+plugin n f a = Plugin { pluginName = n, filterPlugin = f, runPlugin = a }
+
+simplePlugin :: String -> (Stanza -> Bool) -> (Stanza -> [Permissions] -> IO (Maybe Stanza)) -> Plugin
+simplePlugin n f a = plugin n f b
+  where
+    b s p c = do
+      r <- a s p
+      case r of
+          Just r' -> c r'
+          Nothing -> return ()
+
+answerPlugin :: String -> (InstantMessage -> Bool) -> (InstantMessage -> [Permissions] -> IO [MessageBody]) -> Plugin
+answerPlugin n f a = simplePlugin n g b
+  where
+    b (MessageS m) p = case getIM m of
+        Just im -> do
+            mb <- a im p
+            case answerIM mb m of
+                Just rm -> return $ Just (MessageS rm)
+                Nothing -> return Nothing
+        Nothing -> return Nothing
+    b _ _ = return Nothing
+    g (MessageS m) = case getIM m of
+        Just im -> f im
         Nothing -> False
-        Just m -> messageFilter mod m
+    g _ = False
 
-    handleStanza mod (MessageS m) = case getIM m of
-        Nothing -> return ()
-        Just m -> handleMessage mod m
+answerFilter :: (MessageBody -> Bool) -> (InstantMessage -> Bool)
+answerFilter f (InstantMessage _ _ []) = False
+answerFilter f (InstantMessage _ _ [x]) = f x
+answerFilter f (InstantMessage _ _ xs) = any f xs
+
+
+commandFilter' :: Text -> MessageBody -> Bool
+commandFilter' _ (MessageBody _ "") = False
+commandFilter' c (MessageBody _ xs) = c `T.isPrefixOf` xs
+
+commandFilter = answerFilter . commandFilter'

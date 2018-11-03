@@ -1,6 +1,5 @@
 module Gnut.Router
     ( setupRouterNetwork
-    , pureModuleStore
     )
     where
 
@@ -27,17 +26,16 @@ setupRouterNetwork esin hout bplugins = compile $ do
     let
         ea = fmap (\s -> (getPlugins plugins s, s)) ein
         ea :: Event ([ModuleHandler], Stanza)
-        eb = fmap (\(m, s) -> (m, (s, hout))) ea
-        eb :: Event ([ModuleHandler], (Stanza, ReplyCallback))
-        ec = fmap (\(m, x) -> map (\f -> f x) m) eb
-        ec :: Event ([IO ()])
-        eend = fmap msum ec
+        eb = fmap (\(m, s) -> (m, (s, []))) ea
+        eb :: Event ([ModuleHandler], (Stanza, [Permissions]))
+        ec = fmap (\(m, s) -> (m, (s, hout))) eb
+        ec :: Event ([ModuleHandler], ((Stanza, [Permissions]), ReplyCallback))
+        ed = fmap (\(m, x) -> map (\f -> f x) m) ec
+        ed :: Event ([IO ()])
+        eend = fmap (mapM_ id) ed
         eend :: Event (IO ())
 
     reactimate eend
 
 getPlugins :: [(ModuleFilter, ModuleHandler)] -> Stanza -> [ModuleHandler]
 getPlugins p s = map snd $ filter (\(f,h) -> f s) p
-
-pureModuleStore :: ModuleStore
-pureModuleStore = pure [(pure True, (print <$> fst))]

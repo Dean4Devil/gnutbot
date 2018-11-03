@@ -1,13 +1,5 @@
 module Gnut.Permissions
     ( Permissions
-    , PermBehavior
-    , checkPermission
-    , purePerm
-
-    , hasPerm
-    , hasPermNot
-    , filterNoPerm
-
     , Permission(..)
     , PermPath(..)
     , PermDesc(..)
@@ -20,9 +12,6 @@ module Gnut.Permissions
     , matches
     )
     where
-
-import Gnut.Types
-import Gnut.Module
 
 import Reactive.Banana
 import Reactive.Banana.Frameworks
@@ -39,28 +28,7 @@ import qualified Data.Yaml as Y
 import Data.Text (Text)
 import qualified Data.Text as T
 
-data Permissions = Permissions { admin :: String }
-
-type PermBehavior = Behavior (Stanza -> Bool)
-
-checkPermission :: Permissions -> Stanza -> Bool
-checkPermission store message = True
-
-purePerm :: PermBehavior
-purePerm = checkPermission <$> pure p
-  where p = Permissions { admin = "dean" }
-
-hasPermNot :: String -> Stanza -> Bool
-hasPermNot p s = not $ hasPerm p s
-
-hasPerm :: String -> Stanza -> Bool
-hasPerm "gnut.ignore" _ = False
-hasPerm _ _ = True
-
-filterNoPerm p s = filterE (hasPermNot p) s
-
-
----------------------------------------------------
+type Permissions = [Permission]
 
 -- Hidden behind newtype for custom Show & Ord implementations
 newtype PermPath = PermPath [Text]

@@ -12,16 +12,26 @@ import qualified Data.Text as T
 
 import Network.Xmpp.Internal
 
+import Gnut.Xmpp
 import Gnut.Router
+import Gnut.Module
 import Gnut.Types
 import Gnut.Permissions
 
 run :: IO ()
 run = do
     msgsrc <- newAddHandler
-    network <- setupRouterNetwork purePerm (addHandler msgsrc)
-    actuate network
+    pms <- newAddHandler
+    session <- setupSession "paranoidlabs.org" (Just (const [plain ("gnut") Nothing ("quailaeQu3ahbei0vaXa")], Nothing))
+    xmpp <- setupXmppNetwork session (addHandler msgsrc) (dmChannelMap (fire pms))
+    pmrouter <- setupRouterNetwork (addHandler pms) (fire msgsrc) pureModuleStore
+
+    actuate xmpp
+    actuate pmrouter
+
     eventLoop msgsrc
+
+    teardownSession session
 
 eventLoop :: (EventSource Stanza) -> IO ()
 eventLoop esmsg = loop
@@ -37,8 +47,7 @@ eventLoop esmsg = loop
             let (x:xs) = words s
             case x of
                 "q" -> return ()
-                "o" -> fire esmsg $ MessageS $ simpleIM [jid|cli@gnut|] (T.pack $ unwords xs)
-                "d" -> fire esmsg $ MessageS $ simpleIM [jid|cli@gnut|] (T.pack $ unwords xs)
+                "d" -> fire esmsg $ MessageS $ simpleIM [jid|dean4devil@paranoidlabs.org|] (T.pack $ unwords xs)
                 _ -> putStrLn "Commands: d <msg>|o <msg>|q"
             when (x /= "q") loop
 

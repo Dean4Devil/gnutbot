@@ -1,19 +1,23 @@
 module Gnut.Modules.Hello
-    ( Hello(..)
-    , messageFilter
-    , handleMessage
-    )
-    where
+    ( getPlugin
+    ) where
 
 import System.IO
 
+import Network.Xmpp.Internal hiding (Plugin)
 import Network.Xmpp.IM
 
 import Gnut.Types
+import Gnut.Permissions
 
-data Hello = Hello
+getPlugin :: Plugin
+getPlugin = answerPlugin "Hello" messageFilter handleMessage
 
-instance GnutIMModule Hello where
-    messageFilter _ m = True
+messageFilter = answerFilter helloFilter
 
-    handleMessage _ m = print m
+helloFilter :: MessageBody -> Bool
+helloFilter (MessageBody _ "!hai") = True
+helloFilter (MessageBody _ _) = False
+
+
+handleMessage _ _ = pure [MessageBody { bodyLang = Nothing, bodyContent = "Hello there!" }]
