@@ -14,13 +14,8 @@ import Reactive.Banana.Frameworks
 import Network.Xmpp.Internal
 
 import Gnut.Types
-import Gnut.Module hiding (ModuleStore)
+import Gnut.Module
 import Gnut.Permissions
-
-type ModuleFilter = (Stanza -> Bool)
-type FatHandler = Handler (Stanza, ReplyCallback)
-type ReplyCallback = Handler Stanza
-type ModuleStore = Behavior [(ModuleFilter, FatHandler)]
 
 setupRouterNetwork :: AddHandler Stanza -> Handler Stanza -> ModuleStore -> IO EventNetwork
 setupRouterNetwork esin hout bplugins = compile $ do
@@ -31,9 +26,9 @@ setupRouterNetwork esin hout bplugins = compile $ do
     plugins <- valueB bplugins
     let
         ea = fmap (\s -> (getPlugins plugins s, s)) ein
-        ea :: Event ([FatHandler], Stanza)
+        ea :: Event ([ModuleHandler], Stanza)
         eb = fmap (\(m, s) -> (m, (s, hout))) ea
-        eb :: Event ([FatHandler], (Stanza, ReplyCallback))
+        eb :: Event ([ModuleHandler], (Stanza, ReplyCallback))
         ec = fmap (\(m, x) -> map (\f -> f x) m) eb
         ec :: Event ([IO ()])
         eend = fmap msum ec
@@ -41,7 +36,7 @@ setupRouterNetwork esin hout bplugins = compile $ do
 
     reactimate eend
 
-getPlugins :: [(ModuleFilter, FatHandler)] -> Stanza -> [FatHandler]
+getPlugins :: [(ModuleFilter, ModuleHandler)] -> Stanza -> [ModuleHandler]
 getPlugins p s = map snd $ filter (\(f,h) -> f s) p
 
 pureModuleStore :: ModuleStore
