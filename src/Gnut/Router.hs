@@ -1,9 +1,12 @@
 module Gnut.Router
     ( setupRouterNetwork
+    , pureModuleStore
     )
     where
 
 import Prelude hiding (lookup)
+
+import Control.Monad
 
 import Reactive.Banana
 import Reactive.Banana.Frameworks
@@ -11,40 +14,35 @@ import Reactive.Banana.Frameworks
 import Network.Xmpp.Internal
 
 import Gnut.Types
-import Gnut.Module
+import Gnut.Module hiding (ModuleStore)
 import Gnut.Permissions
 
--- Routers job:
--- 1. Filter all stanzas that are
---      - invalid
---      - sent by ignored sources (jids, mucs, external people, ..)
--- 2. Find the Module(s) that want to handle that stanza
---      - Rewrite the JID from gnut@paranoidlabs.org to <module>@gnut
---      - How to treat exclusivity (e.g. permission-, log-, module-store- module)?
--- 3. Send the stanza to that source(s)
+type ModuleFilter = (Stanza -> Bool)
+type FatHandler = Handler (Stanza, ReplyCallback)
+type ReplyCallback = Handler Stanza
+type ModuleStore = Behavior [(ModuleFilter, FatHandler)]
 
--- Returns Just s ∀ valid s, Nothing otherwise
-filterInvalid' :: Stanza -> Maybe Stanza
-filterInvalid' = Just
+setupRouterNetwork :: AddHandler Stanza -> Handler Stanza -> ModuleStore -> IO EventNetwork
+setupRouterNetwork esin hout bplugins = compile $ do
+    -- Stanzas the XMPP module has forwarded to us specifically
+    ein <- fromAddHandler esin
 
-filterInvalid s = filterJust $ fmap filterInvalid' s
-
-filterIgnored = filterNoPerm "gnut.ignore"
-
-setupRouterNetwork :: PermBehavior -> (AddHandler Stanza) -> IO EventNetwork
-setupRouterNetwork ignored esmsg = compile $ do
-    (mods,h) <- newBehavior startModules
-
-    liftIOLater $ setupModuleStore h esmsg
-
-    emsg <- fromAddHandler esmsg
-
+    -- TODO Figure this valueB out like in Xmpp.hs
+    plugins <- valueB bplugins
     let
-        -- lookup module to run -> Event (mod)
-        --
-        modules = fmap applyMod mods
-        efiltered = filterInvalid emsg
-        eunignore = filterIgnored efiltered
-        out = apply modules emsg
+        ea = fmap (\s -> (getPlugins plugins s, s)) ein
+        ea :: Event ([FatHandler], Stanza)
+        eb = fmap (\(m, s) -> (m, (s, hout))) ea
+        eb :: Event ([FatHandler], (Stanza, ReplyCallback))
+        ec = fmap (\(m, x) -> map (\f -> f x) m) eb
+        ec :: Event ([IO ()])
+        eend = fmap msum ec
+        eend :: Event (IO ())
 
-    reactimate $ fmap id out
+    reactimate eend
+
+getPlugins :: [(ModuleFilter, FatHandler)] -> Stanza -> [FatHandler]
+getPlugins p s = map snd $ filter (\(f,h) -> f s) p
+
+pureModuleStore :: ModuleStore
+pureModuleStore = pure [(pure True, (print <$> fst))]
