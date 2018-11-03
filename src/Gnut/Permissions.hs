@@ -156,8 +156,11 @@ matches' (PermPath x) (Wildcard (PermPath y)) = (y `isPrefixOf` x) && (length y 
 -- compare a.b.c a.b.c.* == LT -- a.b.c is less precise than a.b.c.*
 -- compare a.b.* d.e.* == EQ
 --
--- Global < Local
+-- Local < Global
+-- I mean if you are a global admin, what's the point in forbidding you
+-- rights in a specific channel?
+--
 -- Role < Personal
 -- So, if you get a command in a MUC Gnut should checks:
--- <Channel>.Personal -> <Channel>.Role -> Global.Personal -> Global.Role -> Default
+-- Global.Personal -> Global.Role -> <Channel>.Personal -> <Channel>.Role -> Default
 -- for the first check that does not return 'Undefined'

@@ -45,9 +45,6 @@ setupRouterNetwork ignored esmsg = compile $ do
         modules = fmap applyMod mods
         efiltered = filterInvalid emsg
         eunignore = filterIgnored efiltered
-        out' = apply modules emsg
-        out = filterJust out'
-
-        curmods = mods <@ emsg
+        out = apply modules emsg
 
     reactimate $ fmap id out

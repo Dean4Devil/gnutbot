@@ -5,6 +5,8 @@ module Gnut.Modules.Hello
     )
     where
 
+import System.IO
+
 import Network.Xmpp.IM
 
 import Gnut.Types

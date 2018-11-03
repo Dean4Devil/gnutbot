@@ -8,6 +8,8 @@ import Network.Xmpp.Internal
 import Data.Map (Map)
 import qualified Data.Map as M
 
+import Data.Maybe
+
 import Reactive.Banana
 import Reactive.Banana.Frameworks
 
@@ -20,21 +22,21 @@ type Modules = Map Jid ModuleAction
 type ModuleStore = Behavior Modules
 type ModuleHandler = Handler Modules
 
-findModule :: Stanza -> Jid
-findModule s = [jid|hello@gnut|]
+findModule :: Stanza -> [Jid]
+findModule s = [[jid|hello@gnut|]]
 
 startModules = M.fromList [ ([jid|hello@gnut|], handleStanza Hello) ]
 
 lookup :: Modules -> Jid -> Maybe ModuleAction
 lookup m j = M.lookup j m
 
-lookupS :: Modules -> Stanza -> Maybe ModuleAction
-lookupS m s = lookup m $ findModule s
+lookupS :: Modules -> Stanza -> [ModuleAction]
+lookupS m s = catMaybes $ map (lookup m) (findModule s)
 
-applyMod :: Modules -> Stanza -> Maybe (IO ())
+applyMod :: Modules -> Stanza -> IO ()
 applyMod m s = do
-    mod <- lookupS m s
-    return $ mod s
+    let mods = lookupS m s
+    mapM_ (\m -> m s) mods
 
 keys = M.keys
 
