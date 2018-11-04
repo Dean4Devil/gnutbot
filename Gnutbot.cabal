@@ -66,6 +66,7 @@ library
                  , Gnut.Permissions
                  , Gnut.Modules.Echo
                  , Gnut.Modules.Hello
+                 , Gnut.Modules.Admin
 
     -- LANGUAGE extensions used by modules in this package.
     default-extensions: OverloadedStrings

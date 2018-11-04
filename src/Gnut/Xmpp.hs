@@ -3,6 +3,7 @@ module Gnut.Xmpp
     , teardownSession
     , setupXmppNetwork
     , dmChannelMap
+    , ChannelNetworks
     ) where
 
 import Control.Lens
