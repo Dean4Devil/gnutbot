@@ -12,6 +12,9 @@ import Control.Lens
 import Reactive.Banana
 import Reactive.Banana.Frameworks
 
+import Data.Map (Map)
+import qualified Data.Map as M
+
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -23,26 +26,51 @@ import Gnut.Router
 import Gnut.Module
 import Gnut.Types
 import Gnut.Permissions
+import Gnut.Modules.Admin
 
 run :: Config -> IO ()
 run c = do
-    msgsrc <- newAddHandler
-    pms <- newAddHandler
-
     session <- setupSession "paranoidlabs.org" (Just (const [plain ("gnut") Nothing ("quailaeQu3ahbei0vaXa")], Nothing))
 
     let perms = userPermsFromAccessConfig $ c^.access
-    print perms
 
-    xmpp <- setupXmppNetwork session (addHandler msgsrc) (dmChannelMap (fire pms))
-    pmrouter <- setupRouterNetwork (addHandler pms) (fire msgsrc) pureModuleStore perms
+    msgsrc <- newAddHandler
+    pms <- newAddHandler
+    a <- newAddHandler
 
-    actuate xmpp
-    actuate pmrouter
+    m <- setupMainNetwork session msgsrc perms pms a
+    actuate m
 
     eventLoop msgsrc
 
     teardownSession session
+
+{-
+ -setupMainNetwork :: Session
+ -                 -> EventSource Stanza
+ -                 -> [User]
+ -                 -> IO EventNetwork
+ -}
+setupMainNetwork s msgsrc perms pms a = compile $ do
+    let mods = pureModuleStore ++ [(adminFilter, fire a)]
+    let cs = dmChannelMap (fire pms) mods perms (fire msgsrc)
+
+    (bchannel, hc) <- newBehavior cs
+    (bmodules, hm) <- newBehavior mods
+
+    liftIOLater $ do
+
+
+        xmpp <- setupXmppNetwork s (addHandler msgsrc) bchannel
+        pmrouter <- setupRouterNetwork id (addHandler pms) (fire msgsrc) bmodules perms
+
+        adm <- setupAdminNetwork bchannel hc (addHandler a)
+
+        actuate xmpp
+        actuate pmrouter
+        actuate adm
+
+    return ()
 
 eventLoop :: (EventSource Stanza) -> IO ()
 eventLoop esmsg = loop

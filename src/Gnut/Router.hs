@@ -1,5 +1,6 @@
 module Gnut.Router
     ( setupRouterNetwork
+    , mangleMuc
     )
     where
 
@@ -18,8 +19,8 @@ import Gnut.Types
 import Gnut.Module
 import Gnut.Permissions
 
-setupRouterNetwork :: AddHandler Stanza -> Handler Stanza -> ModuleStore -> Map Jid Permissions -> IO EventNetwork
-setupRouterNetwork esin hout bplugins uperm = compile $ do
+setupRouterNetwork :: (Stanza -> Stanza) -> AddHandler Stanza -> Handler Stanza -> ModuleStore -> Map Jid Permissions -> IO EventNetwork
+setupRouterNetwork mngl esin hout bplugins uperm = compile $ do
     -- Stanzas the XMPP module has forwarded to us specifically
     ein <- fromAddHandler esin
 
@@ -32,7 +33,7 @@ setupRouterNetwork esin hout bplugins uperm = compile $ do
         eb = fmap (\(m, s) -> (m, (s, [permLookup s]))) ea
         eb :: Event ([ModuleHandler], (Stanza, [Permissions]))
 
-        ec = fmap (\(m, s) -> (m, (s, hout))) eb
+        ec = fmap (\(m, s) -> (m, (s, (hout . mngl)))) eb
         ec :: Event ([ModuleHandler], ((Stanza, [Permissions]), ReplyCallback))
 
         ed = fmap (\(m, x) -> map (\f -> f x) m) ec
@@ -44,6 +45,11 @@ setupRouterNetwork esin hout bplugins uperm = compile $ do
     reactimate eend
   where
     permLookup s = permLookup' uperm s
+
+mangleMuc :: Stanza -> Stanza
+mangleMuc (MessageS m) = MessageS $ m { messageType = GroupChat
+                                      , messageTo = fmap toBare (messageTo m)
+                                      }
 
 getPlugins :: [(ModuleFilter, ModuleHandler)] -> Stanza -> [ModuleHandler]
 getPlugins p s = map snd $ filter (\(f,h) -> f s) p

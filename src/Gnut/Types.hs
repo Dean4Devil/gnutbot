@@ -2,6 +2,9 @@ module Gnut.Types where
 
 import Gnut.Permissions
 
+import Data.Map (Map)
+import qualified Data.Map as M
+
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -37,10 +40,13 @@ answerPlugin n f a = simplePlugin n g b
                 Nothing -> return Nothing
         Nothing -> return Nothing
     b _ _ = return Nothing
-    g (MessageS m) = case getIM m of
+    g = simpleFilter f
+
+simpleFilter :: (InstantMessage -> Bool) -> (Stanza -> Bool)
+simpleFilter f (MessageS m) = case getIM m of
         Just im -> f im
         Nothing -> False
-    g _ = False
+simpleFilter _ _ = False
 
 answerFilter :: (MessageBody -> Bool) -> (InstantMessage -> Bool)
 answerFilter f (InstantMessage _ _ []) = False

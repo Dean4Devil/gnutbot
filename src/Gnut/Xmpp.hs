@@ -3,7 +3,8 @@ module Gnut.Xmpp
     , teardownSession
     , setupXmppNetwork
     , dmChannelMap
-    , ChannelNetworks
+    , ChannelNetworks(..)
+    , innerEither
     ) where
 
 import Control.Lens
@@ -26,6 +27,8 @@ import Network.Xmpp.IM
 import Network.Xmpp.Internal
 
 import Gnut.Types
+import Gnut.Module
+import Gnut.Permissions
 
 setupSession :: HostName -> AuthData -> IO Session
 setupSession domain authdata = do
@@ -55,17 +58,6 @@ receiveLoop session h = do
       loop;
   }
 
--- FIXME: Enforce there to always be a DirectMessage network by proper
--- types
-data Channel = DirectMessage
-             | MUC String
-             deriving (Show, Eq, Ord)
-
-data ChannelNetworks = ChannelNetworks
-    { directMessage :: (Handler Stanza)
-    , muc :: Map Jid (Handler Stanza)
-    }
-
 setupXmppNetwork :: Session
                  -> AddHandler Stanza
                  -> Behavior ChannelNetworks
@@ -85,30 +77,38 @@ setupXmppNetwork session esout bchannels = compile $ do
     -- step? Is that more efficient/smarter?
     channels <- valueB bchannels
     let
-        ea = fmap (\s -> (eitherMucPm channels s, s)) ein
+        mucPmB = fmap (\c s -> (eitherMucPm c s, s)) bchannels
+        mucPmB :: Behavior (Stanza -> (Either (Handler Stanza) (Handler Stanza), Stanza))
+
+        ea = mucPmB <@> ein
         ea :: Event (Either (Handler Stanza) (Handler Stanza), Stanza)
 
         eb = fmap innerEither ea
         eb :: Event (Either (Handler Stanza, Stanza) (Handler Stanza, Stanza))
 
-        (epm,emuc) = split eb
+        (emuc,epm) = split eb
         epm :: Event (Handler Stanza, Stanza)
         emuc :: Event (Handler Stanza, Stanza)
 
-        epmsend = fmap (\(h, s) -> h s) epm
-        epmsend :: Event (IO ())
+        epmrecvd = fmap (\(h, s) -> h s) epm
+        epmrecvd :: Event (IO ())
 
-        emucsend = fmap (\(h, s) -> h s) emuc
-        emucsend :: Event (IO ())
+        emucrecvd = fmap (\(h, s) -> h s) emuc
+        emucrecvd :: Event (IO ())
 
-    reactimate epmsend
-    reactimate emucsend
+    reactimate epmrecvd
+    reactimate emucrecvd
+    reactimate $ fmap (putStrLn . ((++) "Sending: ") . show) eout
+    reactimate $ fmap (putStrLn . ((++) "Rcvd via MUC: ") . show . snd) emuc
+    reactimate $ fmap (putStrLn . ((++) "Rcvd via PM: ") . show . snd) epm
+    reactimate $ fmap (print) (bchannels <@ ein)
 
 -- Left Muc | Right PM/Not joined Muc
 eitherMucPm :: ChannelNetworks -> Stanza -> Either (Handler Stanza) (Handler Stanza)
 eitherMucPm c s = do
     case extractJid s of
-        Just j -> case M.lookup j (muc c) of
+        --Just j -> case M.lookup (toBare j) (muc c) of
+        Just j -> case M.lookup (toBare j) (muc c) of
             Just h -> Left h
             Nothing -> Right $ directMessage c
         Nothing -> Right $ directMessage c
@@ -119,11 +119,36 @@ sendStanza_ session stanza = do
     return ()
 
 sanitizeMuc :: Stanza -> Stanza
-sanitizeMuc = id
+sanitizeMuc (MessageS m) = MessageS $ m { messageType = GroupChat }
+sanitizeMuc s = id s
 
 innerEither :: (Either a b, c) -> Either (a,c) (b,c)
 innerEither (Left a, c) = Left (a,c)
 innerEither (Right b, c) = Right (b,c)
 
-dmChannelMap :: Handler Stanza -> Behavior (ChannelNetworks)
-dmChannelMap h = pure $ ChannelNetworks { directMessage = h, muc = M.empty }
+data ChannelNetworks = ChannelNetworks
+    { directMessage :: (Handler Stanza)
+    , muc :: Map Jid (Handler Stanza)
+    , nws :: Map Jid (EventNetwork)
+    , hout :: Handler Stanza
+    , defMods :: [Module]
+    , defPerms :: Map Jid Permissions
+    }
+
+dmChannelMap :: Handler Stanza
+             -> [Module]
+             -> Map Jid Permissions
+             -> Handler Stanza
+             -> ChannelNetworks
+dmChannelMap h m p out = ChannelNetworks
+    { directMessage = h
+    , muc = M.empty
+    , nws = M.empty
+    , hout = out
+    , defMods = m
+    , defPerms = p
+    }
+
+instance Show ChannelNetworks where
+    show (ChannelNetworks _ muc nws _ _ defPerms) =
+        "ChannelNetworks ( Joined MUC: " ++ (show $ M.keys muc) ++ ", Networks: " ++ (show $ M.keys nws) ++ ", default Perms: " ++ show defPerms ++ ")\n"

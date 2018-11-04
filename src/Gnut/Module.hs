@@ -33,8 +33,8 @@ setupModuleNetwork update = compile $ do
 
     return ()
 
-pureModuleStore :: ModuleStore
-pureModuleStore = pure $ [storePlugin Hello.getPlugin, storePlugin Echo.getPlugin]
+pureModuleStore :: [Module]
+pureModuleStore = [storePlugin Hello.getPlugin, storePlugin Echo.getPlugin]
 
 
 storePlugin :: Plugin -> (ModuleFilter, ModuleHandler)
