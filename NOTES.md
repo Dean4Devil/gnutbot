@@ -11,12 +11,12 @@ Stuff I want for v0.1.0.0:
 - [ ] Gracefully degradation if not allowed to access JIDs.
 - [ ] Initial Commands
 - [ ]   ping/pong command with latency check
-- [/]   echo command
+- [x]   echo command
 - [ ]   quotes
 - [ ]   polls
 
 Stuff I want for v1.0.0.0:
-- [ ] Global and Per-Channel FRP event tree
+- [\] Global and Per-Channel FRP event tree
 - [ ] Plugin system
 - [ ]   Global un-/loadable plugins
 - [ ]   Per channel un-/loadable plugins
