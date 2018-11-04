@@ -95,10 +95,6 @@ setupXmppNetwork session esout bchannels = compile $ do
 
     reactimate epmrecvd
     reactimate emucrecvd
-    reactimate $ fmap (putStrLn . ((++) "Sending: ") . show) eout
-    reactimate $ fmap (putStrLn . ((++) "Rcvd via MUC: ") . show . snd) emuc
-    reactimate $ fmap (putStrLn . ((++) "Rcvd via PM: ") . show . snd) epm
-    reactimate $ fmap (print) (bchannels <@ ein)
 
 -- Left Muc | Right PM/Not joined Muc
 eitherMucPm :: ChannelNetworks -> Stanza -> Either (Handler Stanza) (Handler Stanza)
