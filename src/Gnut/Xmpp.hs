@@ -73,9 +73,6 @@ setupXmppNetwork session esout bchannels = compile $ do
     (ein, hin) <- newEvent
     liftIOLater $ receiveLoop session hin
 
-    -- TODO: This valueB could possibly be replaced by `apply` on the ea/eb
-    -- step? Is that more efficient/smarter?
-    channels <- valueB bchannels
     let
         mucPmB = fmap (\c s -> (eitherMucPm c s, s)) bchannels
         mucPmB :: Behavior (Stanza -> (Either (Handler Stanza) (Handler Stanza), Stanza))

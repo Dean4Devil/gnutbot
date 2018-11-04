@@ -24,10 +24,11 @@ setupRouterNetwork mngl esin hout bplugins uperm = compile $ do
     -- Stanzas the XMPP module has forwarded to us specifically
     ein <- fromAddHandler esin
 
-    -- TODO Figure this valueB out like in Xmpp.hs
-    plugins <- valueB bplugins
     let
-        ea = fmap (\s -> (getPlugins plugins s, s)) ein
+        ba = fmap (\p s -> (getPlugins p s, s)) bplugins
+        ba :: Behavior (Stanza -> ([ModuleHandler], Stanza))
+
+        ea = ba <@> ein
         ea :: Event ([ModuleHandler], Stanza)
 
         eb = fmap (\(m, s) -> (m, (s, [permLookup s]))) ea
