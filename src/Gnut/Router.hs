@@ -42,7 +42,6 @@ setupRouterNetwork esin hout bplugins uperm = compile $ do
         eend :: Event (IO ())
 
     reactimate eend
-    reactimate $ fmap (print . snd) eb
   where
     permLookup s = permLookup' uperm s
 
@@ -58,11 +57,3 @@ lookupS :: Map Jid Permissions -> Stanza -> Maybe Permissions
 lookupS m s = do
     j <- extractJid s
     lookup (toBare j) m
-  where
-    extractJid (IQRequestS i) = iqRequestFrom i
-    extractJid (IQResultS i) = iqResultFrom i
-    extractJid (IQErrorS i) = iqErrorFrom i
-    extractJid (MessageS m) = messageFrom m
-    extractJid (MessageErrorS m) = messageErrorFrom m
-    extractJid (PresenceS p) = presenceFrom p
-    extractJid (PresenceErrorS p) = presenceErrorFrom p

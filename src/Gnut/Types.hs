@@ -53,3 +53,12 @@ commandFilter' _ (MessageBody _ "") = False
 commandFilter' c (MessageBody _ xs) = c `T.isPrefixOf` xs
 
 commandFilter = answerFilter . commandFilter'
+
+extractJid :: Stanza -> Maybe Jid
+extractJid (IQRequestS i) = iqRequestFrom i
+extractJid (IQResultS i) = iqResultFrom i
+extractJid (IQErrorS i) = iqErrorFrom i
+extractJid (MessageS m) = messageFrom m
+extractJid (MessageErrorS m) = messageErrorFrom m
+extractJid (PresenceS p) = presenceFrom p
+extractJid (PresenceErrorS p) = presenceErrorFrom p
