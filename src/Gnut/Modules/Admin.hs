@@ -1,6 +1,7 @@
 module Gnut.Modules.Admin
     ( setupAdminNetwork
     , adminFilter
+    , adminPlugin
     ) where
 
 import Prelude hiding (words)
@@ -33,6 +34,8 @@ data CError = InvalidCommand
 
 
 adminFilter = simpleFilter $ answerFilter $ (\b -> or [commandFilter' "!join" b, commandFilter' "!leave" b])
+
+adminPlugin = plugin "Admin" adminFilter . curry . curry
 
 
 type ChannelUpdate = Either (Jid, Handler Stanza) Jid
@@ -127,6 +130,7 @@ runJoin esplugin mangle hout defaults j h = do
     (esinput, hinput) <- newAddHandler
     en <- setupChannelNetwork esinput esplugin mangle hout defaults
     actuate en
+    (h $ joinS j)
     return (j, hinput, en)
 
 runLeave :: Jid

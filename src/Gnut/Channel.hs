@@ -69,7 +69,7 @@ applyPlugin x p c s = if plFilter x s then plAction x s (permFilter p s) c else 
 
 permFilter :: Map Jid [Permissions] -> Stanza -> [Permissions]
 permFilter p s = case extractJid s of
-    Just j -> maybe [] id (lookup j p)
+    Just j -> maybe [] id (lookup (toBare j) p)
     Nothing -> []
 
 sanitizeMuc :: Stanza -> Stanza

@@ -32,16 +32,26 @@ run :: Config -> IO ()
 run c = do
     session <- setupSession "paranoidlabs.org" (Just (const [plain ("gnut") Nothing ("quailaeQu3ahbei0vaXa")], Nothing))
 
-    let perms = userPermsFromAccessConfig $ c^.access
-        chansettings = ChannelSettings { csPlugins = M.empty, csPermissions = perms }
-
     (esstanza, hstanza) <- newAddHandler
     (eschannel, hchannel) <- newAddHandler
     (esprivmsg, hprivmsg) <- newAddHandler
     (esplugin, hplugin) <- newAddHandler
+    (esadmin, hadmin) <- newAddHandler
+
+    let perms = userPermsFromAccessConfig $ c^.access
+        chansettings = ChannelSettings
+                     { csPlugins = M.singleton "Admin" (adminPlugin hadmin)
+                     , csPermissions = perms
+                     }
+
+    print perms
 
     xmpp <- setupXmppNetwork session esstanza eschannel hprivmsg
     privmsg <- setupChannelNetwork esprivmsg esplugin id hstanza chansettings
+
+    admin <- setupAdminNetwork hchannel esadmin esplugin mangleMuc hstanza chansettings
+
+    actuate admin
 
     actuate privmsg
     actuate xmpp
@@ -49,6 +59,11 @@ run c = do
     eventLoop hstanza
 
     teardownSession session
+
+mangleMuc :: Stanza -> Stanza
+mangleMuc (MessageS m) = MessageS $ m { messageType = GroupChat
+                                      , messageTo = fmap toBare (messageTo m)
+                                      }
 
 {-
  -{-
