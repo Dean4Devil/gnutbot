@@ -52,7 +52,7 @@ setupAdminNetwork hchannel esinput esplugin mangle hout defaults = compile $ do
     let 
         runCommand' = runCommand esplugin mangle hout defaults
         eecommand' = runCommand' <$> einput
-        eecommand' :: Event (Maybe (Either (IO (EventNetwork, (Jid, Handler Stanza))) Jid))
+        eecommand' :: Event (IO (Maybe (ChannelUpdate, (Either (Jid, EventNetwork) Jid))))
 
         eecommand = filterJust eecommand'
 
@@ -103,23 +103,17 @@ runCommand :: AddHandler PlugUpdate
            -> Handler Stanza
            -> ChannelSettings 
            -> ((Stanza, [Permissions]), Handler Stanza)
-           -> Maybe (Either (IO (EventNetwork, (Jid, Handler Stanza))) Jid)
-runCommand esplugin mangle hout defaults abomination = case parseCommand' abomination of
-    ((Left _, _), _) -> Nothing
-    ((Right c, p), h) -> case checkPerm ((c, p), h) of
-        Nothing -> Nothing
-        Just (Leave j, h) -> Just $ Right j
-        Just (Join j, h) -> Just $ Left $ do
-            
+           -> IO (Maybe (ChannelUpdate, (Either (Jid, EventNetwork) Jid)))
+runCommand esplugin mangle hout defaults ((s, p), h) = case parseCommand s of
+    Left _ -> return Nothing
+    Right c -> if checkPerm c p then do
+            return Nothing
+        else
+            return Nothing
 
-
-parseCommand' :: ((Stanza, [Permissions]), Handler Stanza)
-              -> ((Either CError Command, [Permissions]), Handler Stanza)
-parseCommand' ((s,p), h) = ((parseCommand s, p), h)
-
-checkPerm :: ((Command, [Permissions]), Handler Stanza) -> Maybe (Command, Handler Stanza)
-checkPerm ((c@(Join _), p), h) = if checkAllOr False (PermPath ["admin","join"]) p == True then Just (c, h) else Nothing
-checkPerm ((c@(Leave _), p), h) = if checkAllOr False (PermPath ["admin","leave"]) p == True then Just (c, h) else Nothing
+checkPerm :: Command -> [Permissions] -> Bool
+checkPerm (Join _) p = checkAllOr False (PermPath ["admin","join"]) p
+checkPerm (Leave _) p = checkAllOr False (PermPath ["admin","leave"]) p
 
 toResponse :: Command -> Stanza
 toResponse (Join j) = joinS j
