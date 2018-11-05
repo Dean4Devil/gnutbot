@@ -23,7 +23,6 @@ import Network.Xmpp.Internal
 import Gnut.Config
 import Gnut.Xmpp
 import Gnut.Channel
-import Gnut.Module
 import Gnut.Types
 import Gnut.Permissions
 import Gnut.Modules.Admin
@@ -64,29 +63,6 @@ mangleMuc :: Stanza -> Stanza
 mangleMuc (MessageS m) = MessageS $ m { messageType = GroupChat
                                       , messageTo = fmap toBare (messageTo m)
                                       }
-
-{-
- -{-
- - -setupMainNetwork :: Session
- - -                 -> EventSource Stanza
- - -                 -> [User]
- - -                 -> IO EventNetwork
- - -}
- -setupMainNetwork s msgsrc perms pms a = compile $ do
- -    let mods = pureModuleStore ++ [(adminFilter, fire a)]
- -    let cs = dmChannelMap (fire pms) mods perms (fire msgsrc)
- -
- -    (bchannel, hc) <- newBehavior cs
- -    (bmodules, hm) <- newBehavior mods
- -
- -    liftIOLater $ do
- -
- -
- -
- -        adm <- setupAdminNetwork bchannel hc (addHandler a)
- -
- -    return ()
- -}
 
 eventLoop :: Handler Stanza -> IO ()
 eventLoop esmsg = loop

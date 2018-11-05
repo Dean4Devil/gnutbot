@@ -2,9 +2,6 @@ module Gnut.Xmpp
     ( setupSession
     , teardownSession
     , setupXmppNetwork
-    , dmChannelMap
-    , ChannelNetworks(..)
-    , innerEither
     ) where
 
 import Control.Lens
@@ -27,7 +24,6 @@ import Network.Xmpp.IM
 import Network.Xmpp.Internal
 
 import Gnut.Types
-import Gnut.Module
 import Gnut.Permissions
 
 setupSession :: HostName -> AuthData -> IO Session
@@ -114,34 +110,3 @@ sendStanza_ :: Session -> Stanza -> IO ()
 sendStanza_ session stanza = do
     _ <- sendStanza stanza session
     return ()
-
-innerEither :: (Either a b, c) -> Either (a,c) (b,c)
-innerEither (Left a, c) = Left (a,c)
-innerEither (Right b, c) = Right (b,c)
-
-data ChannelNetworks = ChannelNetworks
-    { directMessage :: (Handler Stanza)
-    , muc :: Map Jid (Handler Stanza)
-    , nws :: Map Jid (EventNetwork)
-    , hout :: Handler Stanza
-    , defMods :: [Module]
-    , defPerms :: Map Jid Permissions
-    }
-
-dmChannelMap :: Handler Stanza
-             -> [Module]
-             -> Map Jid Permissions
-             -> Handler Stanza
-             -> ChannelNetworks
-dmChannelMap h m p out = ChannelNetworks
-    { directMessage = h
-    , muc = M.empty
-    , nws = M.empty
-    , hout = out
-    , defMods = m
-    , defPerms = p
-    }
-
-instance Show ChannelNetworks where
-    show (ChannelNetworks _ muc nws _ _ defPerms) =
-        "ChannelNetworks ( Joined MUC: " ++ (show $ M.keys muc) ++ ", Networks: " ++ (show $ M.keys nws) ++ ", default Perms: " ++ show defPerms ++ ")\n"

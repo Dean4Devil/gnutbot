@@ -58,8 +58,7 @@ library
     -- Modules exported by the library.
     exposed-modules: Gnut
     -- Modules included in this library but not exported.
-    other-modules: Gnut.Module
-                 , Gnut.Channel
+    other-modules: Gnut.Channel
                  , Gnut.Config
                  , Gnut.Xmpp
                  , Gnut.Types
