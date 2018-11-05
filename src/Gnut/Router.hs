@@ -7,6 +7,7 @@ module Gnut.Router
 import Prelude hiding (lookup)
 
 import Control.Monad
+import Control.Lens
 
 import Reactive.Banana
 import Reactive.Banana.Frameworks

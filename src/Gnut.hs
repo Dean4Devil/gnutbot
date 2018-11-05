@@ -22,7 +22,7 @@ import Network.Xmpp.Internal
 
 import Gnut.Config
 import Gnut.Xmpp
-import Gnut.Router
+import Gnut.Channel
 import Gnut.Module
 import Gnut.Types
 import Gnut.Permissions
@@ -33,46 +33,47 @@ run c = do
     session <- setupSession "paranoidlabs.org" (Just (const [plain ("gnut") Nothing ("quailaeQu3ahbei0vaXa")], Nothing))
 
     let perms = userPermsFromAccessConfig $ c^.access
+        chansettings = ChannelSettings { csPlugins = M.empty, csPermissions = perms }
 
-    msgsrc <- newAddHandler
-    pms <- newAddHandler
-    a <- newAddHandler
+    (esstanza, hstanza) <- newAddHandler
+    (eschannel, hchannel) <- newAddHandler
+    (esprivmsg, hprivmsg) <- newAddHandler
+    (esplugin, hplugin) <- newAddHandler
 
-    m <- setupMainNetwork session msgsrc perms pms a
-    actuate m
+    xmpp <- setupXmppNetwork session esstanza eschannel hprivmsg
+    privmsg <- setupChannelNetwork esprivmsg esplugin id hstanza chansettings
 
-    eventLoop msgsrc
+    actuate privmsg
+    actuate xmpp
+
+    eventLoop hstanza
 
     teardownSession session
 
 {-
- -setupMainNetwork :: Session
- -                 -> EventSource Stanza
- -                 -> [User]
- -                 -> IO EventNetwork
+ -{-
+ - -setupMainNetwork :: Session
+ - -                 -> EventSource Stanza
+ - -                 -> [User]
+ - -                 -> IO EventNetwork
+ - -}
+ -setupMainNetwork s msgsrc perms pms a = compile $ do
+ -    let mods = pureModuleStore ++ [(adminFilter, fire a)]
+ -    let cs = dmChannelMap (fire pms) mods perms (fire msgsrc)
+ -
+ -    (bchannel, hc) <- newBehavior cs
+ -    (bmodules, hm) <- newBehavior mods
+ -
+ -    liftIOLater $ do
+ -
+ -
+ -
+ -        adm <- setupAdminNetwork bchannel hc (addHandler a)
+ -
+ -    return ()
  -}
-setupMainNetwork s msgsrc perms pms a = compile $ do
-    let mods = pureModuleStore ++ [(adminFilter, fire a)]
-    let cs = dmChannelMap (fire pms) mods perms (fire msgsrc)
 
-    (bchannel, hc) <- newBehavior cs
-    (bmodules, hm) <- newBehavior mods
-
-    liftIOLater $ do
-
-
-        xmpp <- setupXmppNetwork s (addHandler msgsrc) bchannel
-        pmrouter <- setupRouterNetwork id (addHandler pms) (fire msgsrc) bmodules perms
-
-        adm <- setupAdminNetwork bchannel hc (addHandler a)
-
-        actuate xmpp
-        actuate pmrouter
-        actuate adm
-
-    return ()
-
-eventLoop :: (EventSource Stanza) -> IO ()
+eventLoop :: Handler Stanza -> IO ()
 eventLoop esmsg = loop
     where
     loop = do
@@ -86,14 +87,6 @@ eventLoop esmsg = loop
             let (x:xs) = words s
             case x of
                 "q" -> return ()
-                "d" -> fire esmsg $ MessageS $ simpleIM [jid|dean4devil@paranoidlabs.org|] (T.pack $ unwords xs)
+                "d" -> esmsg $ MessageS $ simpleIM [jid|dean4devil@paranoidlabs.org|] (T.pack $ unwords xs)
                 _ -> putStrLn "Commands: d <msg>|o <msg>|q"
             when (x /= "q") loop
-
-type EventSource a = (AddHandler a, a -> IO ())
-
-addHandler :: EventSource a -> AddHandler a
-addHandler = fst
-
-fire :: EventSource a -> a -> IO ()
-fire = snd

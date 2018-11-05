@@ -28,10 +28,7 @@ type ModuleHandler = Handler ((Stanza, [Permissions]), ReplyCallback)
 type ReplyCallback = Handler Stanza
 
 
-setupModuleNetwork :: ModuleUpdater -> IO EventNetwork
-setupModuleNetwork update = compile $ do
-
-    return ()
+moduleFilter = simpleFilter $ answerFilter $ (\b -> or [commandFilter' "!unload" b, commandFilter' "!load" b])
 
 pureModuleStore :: [Module]
 pureModuleStore = [storePlugin Hello.getPlugin, storePlugin Echo.getPlugin]

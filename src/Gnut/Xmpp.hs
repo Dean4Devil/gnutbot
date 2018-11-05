@@ -58,62 +58,62 @@ receiveLoop session h = do
       loop;
   }
 
+-- Left = Join, Right = Leave
+type ChannelUpdate = Either (Jid, Handler Stanza) Jid
+
 setupXmppNetwork :: Session
                  -> AddHandler Stanza
-                 -> Behavior ChannelNetworks
+                 -> AddHandler ChannelUpdate
+                 -> Handler Stanza
                  -> IO EventNetwork
-setupXmppNetwork session esout bchannels = compile $ do
-    -- Stanzas some part of Gnut wants to send in eout
-    eout <- fromAddHandler esout
-
-    -- Send all stanzas that are to be sent
-    reactimate $ fmap (sendStanza_ session) eout
+setupXmppNetwork session esoutput eschannel pmchannel = compile $ do
+    -- Stanzas we need to send to the world
+    eoutput <- fromAddHandler esoutput
 
     -- Input of all stanzas that are received in ein
-    (ein, hin) <- newEvent
-    liftIOLater $ receiveLoop session hin
+    (einput, hinput) <- newEvent
+    liftIOLater $ receiveLoop session hinput
 
-    let
-        mucPmB = fmap (\c s -> (eitherMucPm c s, s)) bchannels
-        mucPmB :: Behavior (Stanza -> (Either (Handler Stanza) (Handler Stanza), Stanza))
+    -- Channel Join/Leaves
+    echannel <- fromAddHandler eschannel
 
-        ea = mucPmB <@> ein
-        ea :: Event (Either (Handler Stanza) (Handler Stanza), Stanza)
+    (bchannel, hchannel) <- newBehavior M.empty
 
-        eb = fmap innerEither ea
-        eb :: Event (Either (Handler Stanza, Stanza) (Handler Stanza, Stanza))
+    let 
+        (echanjoin, echanleave) = split echannel
 
-        (emuc,epm) = split eb
-        epm :: Event (Handler Stanza, Stanza)
-        emuc :: Event (Handler Stanza, Stanza)
+        uchanjoin = chanJoin <$> bchannel <@> echanjoin
+        uchanjoin :: Event (Map Jid (Handler Stanza))
+        uchanleave = chanLeave <$> bchannel <@> echanleave
+        uchanleave :: Event (Map Jid (Handler Stanza))
 
-        epmrecvd = fmap (\(h, s) -> h s) epm
-        epmrecvd :: Event (IO ())
+        -- bchannel :: Behavior (Map Jid (Handler Stanza))
+        bsendchannel = sendChannel <$> bchannel
+        bsendchannel :: Behavior (Handler Stanza -> Stanza -> IO ())
+        bwithpmchannel = (flip ($) pmchannel) <$> bsendchannel
+        bwithpmchannel :: Behavior (Stanza -> IO ())
 
-        emucrecvd = fmap (\(h, s) -> h s) emuc
-        emucrecvd :: Event (IO ())
+    reactimate $ fmap (sendStanza_ session) eoutput
+    reactimate $ fmap hchannel uchanjoin
+    reactimate $ fmap hchannel uchanleave
+    reactimate $ bwithpmchannel <@> einput
 
-    reactimate epmrecvd
-    reactimate emucrecvd
+chanJoin :: Map Jid (Handler Stanza) -> (Jid, (Handler Stanza)) -> Map Jid (Handler Stanza)
+chanJoin = (flip . uncurry) M.insert
 
--- Left Muc | Right PM/Not joined Muc
-eitherMucPm :: ChannelNetworks -> Stanza -> Either (Handler Stanza) (Handler Stanza)
-eitherMucPm c s = do
-    case extractJid s of
-        --Just j -> case M.lookup (toBare j) (muc c) of
-        Just j -> case M.lookup (toBare j) (muc c) of
-            Just h -> Left h
-            Nothing -> Right $ directMessage c
-        Nothing -> Right $ directMessage c
+chanLeave :: Map Jid (Handler Stanza) -> Jid -> Map Jid (Handler Stanza)
+chanLeave = flip M.delete
+
+chanLookup :: Map Jid (Handler Stanza) -> Jid -> Maybe (Handler Stanza)
+chanLookup = flip M.lookup
+
+sendChannel :: Map Jid (Handler Stanza) -> Handler Stanza -> Stanza -> IO ()
+sendChannel m p s = maybe p id (chanLookup m =<< extractJid s) s
 
 sendStanza_ :: Session -> Stanza -> IO ()
 sendStanza_ session stanza = do
     _ <- sendStanza stanza session
     return ()
-
-sanitizeMuc :: Stanza -> Stanza
-sanitizeMuc (MessageS m) = MessageS $ m { messageType = GroupChat }
-sanitizeMuc s = id s
 
 innerEither :: (Either a b, c) -> Either (a,c) (b,c)
 innerEither (Left a, c) = Left (a,c)

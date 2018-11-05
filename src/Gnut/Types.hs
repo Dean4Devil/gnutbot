@@ -12,13 +12,30 @@ import Network.Xmpp.Internal hiding (Plugin)
 
 import Reactive.Banana.Frameworks
 
+-- Left = Load, Right = Remove
+type PlugUpdate = Either (String, Plugin) (String)
+
+type PermUpdate = Either (Jid, Permission) (Jid, Permission)
+
+data Channel = Channel
+    { network :: EventNetwork -- The EventNetwork the Channel is running
+    , shandler :: Handler Stanza -- A Handler to push Stanzas from outside onto the Network
+    , mhandler :: Handler PlugUpdate -- Update Plugins inside the network
+    , phandler :: Handler PermUpdate -- Update Permissions inside the network
+    }
+type ChannelMap = Map Jid Channel
+data ChannelSettings = ChannelSettings
+    { csPlugins :: Map String Plugin
+    , csPermissions :: Map Jid [Permissions]
+    }
+
 data Plugin =
-     Plugin { pluginName :: String
-            , filterPlugin :: Stanza -> Bool
-            , runPlugin :: Stanza -> [Permissions] -> Handler Stanza -> IO ()
+     Plugin { plName :: String
+            , plFilter :: Stanza -> Bool
+            , plAction :: Stanza -> [Permissions] -> Handler Stanza -> IO ()
             }
 
-plugin n f a = Plugin { pluginName = n, filterPlugin = f, runPlugin = a }
+plugin n f a = Plugin { plName = n, plFilter = f, plAction = a }
 
 simplePlugin :: String -> (Stanza -> Bool) -> (Stanza -> [Permissions] -> IO (Maybe Stanza)) -> Plugin
 simplePlugin n f a = plugin n f b

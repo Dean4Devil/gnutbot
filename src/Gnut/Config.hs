@@ -61,10 +61,10 @@ makeLenses ''UserAccessConfig
 
 type AccessConfig = Map.HashMap Text UserAccessConfig
 
-type UserPerms = Map Jid [Permission]
+type UserPerms = Map Jid [Permissions]
 
 userPermsFromAccessConfig :: AccessConfig -> UserPerms
-userPermsFromAccessConfig a = M.fromList $ map (\(k,v) -> ((fromJust . jidFromText) k, _permissions v)) $ Map.toList a
+userPermsFromAccessConfig a = M.fromList $ map (\(k,v) -> ((fromJust . jidFromText) k, [_permissions v])) $ Map.toList a
 
 data Config = Config
     { _connection :: ConnectionConfig
