@@ -21,7 +21,7 @@ import Reactive.Banana.Frameworks
 import Gnut.Types
 import Gnut.Xmpp
 import Gnut.Permissions
-import Gnut.Router
+import Gnut.Channel
 
 data Command = Join Jid
              | Leave Jid
@@ -50,66 +50,89 @@ setupAdminNetwork hchannel esinput esplugin mangle hout defaults = compile $ do
     (bnetwork, hnetwork) <- newBehavior M.empty
 
     let 
-        runCommand' = runCommand esplugin mangle hout defaults
-        eecommand' = runCommand' <$> einput
-        eecommand' :: Event (IO (Maybe (ChannelUpdate, (Either (Jid, EventNetwork) Jid))))
+        runCommandC = runCommand esplugin mangle hout defaults
+        eemcommand = runCommandC <$> einput
+        eemcommand :: Event (Maybe (Either (IO (Jid, Handler Stanza, EventNetwork)) (IO Jid)))
 
-        eecommand = filterJust eecommand'
+        eecommand = filterJust eemcommand
+        eecommand :: Event (Either (IO (Jid, Handler Stanza, EventNetwork)) (IO Jid))
 
-        echanupdate = fmap (either (fmap $ Left . snd) (return . Right)) eecommand
-        echanupdate :: Event (IO ChannelUpdate)
+        (enetworkadd, enetworkdel) = split eecommand
+        enetworkadd :: Event (IO (Jid, Handler Stanza, EventNetwork))
+        enetworkdel :: Event (IO Jid)
 
-        uchanupdate = fmap (hchannel =<<) echanupdate
-        uchanupdate :: Event (IO ())
+        -- Send the networkupdate to the XMPP router
+        enetup = liftM (\(j,h,_) -> Left (j,h)) <$> enetworkadd
+        enetup :: Event (IO ChannelUpdate)
+        enetdn = liftM Right <$> enetworkdel
+        enetdn :: Event (IO ChannelUpdate)
 
-        (ecreate, eremove) = split eecommand
-        ecreate :: Event (IO (EventNetwork, (Jid, Handler Stanza)))
-        eremove :: Event Jid
+        unetup = ((=<<) hchannel) <$> enetup
+        unetup :: Event (IO ())
+        unetdn = ((=<<) hchannel) <$> enetdn
+        unetdn :: Event (IO ())
 
-        eeventnetworkcreate = fmap (fmap $ \(e, (j, _)) -> (j, e)) ecreate
-        eeventnetworkcreate :: Event (IO (Jid, EventNetwork))
+    reactimate unetup
+    reactimate unetdn
 
-        bnetworkAdd = fmap liftM (networkAdd <$> bnetwork)
-        bnetworkAdd :: Behavior (IO (Jid, EventNetwork) -> IO (M.Map Jid EventNetwork))
-        enetworkAdd = bnetworkAdd <@> eeventnetworkcreate
-        enetworkAdd :: Event (IO (M.Map Jid EventNetwork))
-        unetworkAdd = fmap (hnetwork =<<) enetworkAdd
-        unetworkAdd :: Event (IO ())
+        -- Save the EventNetwork
+    let 
+        enetadd = liftM (\(j,_,e) -> (j,e)) <$> enetworkadd
+        enetadd :: Event (IO (Jid, EventNetwork))
+        bnetadd = addNetwork <$> bnetwork
+        bnetadd :: Behavior ((Jid, EventNetwork) -> M.Map Jid EventNetwork)
+        bnetdel = delNetwork <$> bnetwork
+        bnetdel :: Behavior (Jid -> M.Map Jid EventNetwork)
+        unetadd = liftM <$> bnetadd <@> enetadd
+        unetadd :: Event (IO (M.Map Jid EventNetwork))
+        unetdel = liftM <$> bnetdel <@> enetworkdel
+        unetdel :: Event (IO (M.Map Jid EventNetwork))
 
-        bnetworkDel = networkDel' <$> bnetwork
-        bnetworkDel :: Behavior (Jid -> IO (M.Map Jid EventNetwork))
-        enetworkDel = bnetworkDel <@> eremove
-        enetworkDel :: Event (IO (M.Map Jid EventNetwork))
-        unetworkDel = fmap (hnetwork =<<) enetworkDel
-        unetworkDel :: Event (IO ())
-
-
-    reactimate uchanupdate
-    reactimate unetworkAdd
-    reactimate unetworkDel
+    reactimate $ ((=<<) hnetwork) <$> unetadd
+    reactimate $ ((=<<) hnetwork) <$> unetdel
 
 
-networkAdd = (flip . uncurry) M.insert
+addNetwork = (flip . uncurry) M.insert
+delNetwork = flip M.delete
 
---networkDel = flip M.delete
-
-networkDel' :: M.Map Jid EventNetwork -> Jid -> IO (M.Map Jid EventNetwork)
-networkDel' m j = do
-    maybe (return ()) pause (M.lookup j m)
-    return $ M.delete j m
 
 runCommand :: AddHandler PlugUpdate
            -> (Stanza -> Stanza)
            -> Handler Stanza
-           -> ChannelSettings 
+           -> ChannelSettings
            -> ((Stanza, [Permissions]), Handler Stanza)
-           -> IO (Maybe (ChannelUpdate, (Either (Jid, EventNetwork) Jid)))
+           -> Maybe (Either (IO (Jid, Handler Stanza, EventNetwork)) (IO Jid))
 runCommand esplugin mangle hout defaults ((s, p), h) = case parseCommand s of
-    Left _ -> return Nothing
-    Right c -> if checkPerm c p then do
-            return Nothing
-        else
-            return Nothing
+    Left _ -> Nothing
+    Right c -> if checkPerm c p then Just $ runCommand' esplugin mangle hout defaults (c, h)
+                                else Nothing
+
+runCommand' :: AddHandler PlugUpdate
+            -> (Stanza -> Stanza)
+            -> Handler Stanza
+            -> ChannelSettings
+            -> (Command, Handler Stanza)
+            -> Either (IO (Jid, Handler Stanza, EventNetwork)) (IO Jid)
+runCommand' esplugin mangle hout defaults (Join j, h) = Left $ runJoin esplugin mangle hout defaults j h
+runCommand' _ _ _ _ (Leave j, h) = Right $ runLeave j h
+
+runJoin :: AddHandler PlugUpdate
+        -> (Stanza -> Stanza)
+        -> Handler Stanza
+        -> ChannelSettings
+        -> Jid
+        -> Handler Stanza
+        -> IO (Jid, Handler Stanza, EventNetwork)
+runJoin esplugin mangle hout defaults j h = do
+    (esinput, hinput) <- newAddHandler
+    en <- setupChannelNetwork esinput esplugin mangle hout defaults
+    actuate en
+    return (j, hinput, en)
+
+runLeave :: Jid
+        -> Handler Stanza
+        -> IO Jid
+runLeave j h = (h $ leaveS j) >> return j
 
 checkPerm :: Command -> [Permissions] -> Bool
 checkPerm (Join _) p = checkAllOr False (PermPath ["admin","join"]) p
