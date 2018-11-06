@@ -63,6 +63,7 @@ library
                  , Gnut.Xmpp
                  , Gnut.Types
                  , Gnut.Permissions
+                 , Gnut.Interface
                  , Gnut.Modules.Echo
                  , Gnut.Modules.Hello
                  , Gnut.Modules.Admin

@@ -15,7 +15,19 @@ import Reactive.Banana.Frameworks
 -- Left = Load, Right = Remove
 type PlugUpdate = Either (String, Plugin) (String)
 
-type PermUpdate = Either (Jid, Permission) (Jid, Permission)
+newtype JidKey = JidKey { toJid :: Jid }
+    deriving (Eq, Show)
+
+toJidKey :: Jid -> JidKey
+toJidKey = JidKey . toBare
+
+data Stuff = Stuff { context :: Context
+                   , stanza :: Stanza
+                   } deriving (Eq, Show)
+
+data Context = Context { permissions :: [Permissions]
+                       , channel :: JidKey
+                       } deriving (Eq, Show)
 
 data Channel = Channel
     { network :: EventNetwork -- The EventNetwork the Channel is running
