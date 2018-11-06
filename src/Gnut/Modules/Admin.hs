@@ -32,6 +32,7 @@ data CError = InvalidCommand
             | InvalidJid
             deriving (Show, Eq, Ord)
 
+type PluginLoadH = Handler (Either (Jid, Handler PlugUpdate) Jid)
 
 adminFilter = simpleFilter $ answerFilter $ (\b -> or [commandFilter' "!join" b, commandFilter' "!leave" b])
 
@@ -42,18 +43,18 @@ type ChannelUpdate = Either (Jid, Handler Stanza) Jid
 
 setupAdminNetwork :: Handler ChannelUpdate
                    -> AddHandler ((Stanza, [Permissions]), Handler Stanza)
-                   -> AddHandler PlugUpdate
+                   -> PluginLoadH
                    -> (Stanza -> Stanza)
                    -> Handler Stanza
                    -> ChannelSettings
                    -> IO EventNetwork
-setupAdminNetwork hchannel esinput esplugin mangle hout defaults = compile $ do
+setupAdminNetwork hchannel esinput hplugin mangle hout defaults = compile $ do
     einput <- fromAddHandler esinput
 
     (bnetwork, hnetwork) <- newBehavior M.empty
 
     let 
-        runCommandC = runCommand esplugin mangle hout defaults
+        runCommandC = runCommand hplugin mangle hout defaults
         eemcommand = runCommandC <$> einput
         eemcommand :: Event (Maybe (Either (IO (Jid, Handler Stanza, EventNetwork)) (IO Jid)))
 
@@ -99,7 +100,7 @@ addNetwork = (flip . uncurry) M.insert
 delNetwork = flip M.delete
 
 
-runCommand :: AddHandler PlugUpdate
+runCommand :: PluginLoadH
            -> (Stanza -> Stanza)
            -> Handler Stanza
            -> ChannelSettings
@@ -110,7 +111,7 @@ runCommand esplugin mangle hout defaults ((s, p), h) = case parseCommand s of
     Right c -> if checkPerm c p then Just $ runCommand' esplugin mangle hout defaults (c, h)
                                 else Nothing
 
-runCommand' :: AddHandler PlugUpdate
+runCommand' :: PluginLoadH
             -> (Stanza -> Stanza)
             -> Handler Stanza
             -> ChannelSettings
@@ -119,17 +120,22 @@ runCommand' :: AddHandler PlugUpdate
 runCommand' esplugin mangle hout defaults (Join j, h) = Left $ runJoin esplugin mangle hout defaults j h
 runCommand' _ _ _ _ (Leave j, h) = Right $ runLeave j h
 
-runJoin :: AddHandler PlugUpdate
+runJoin :: PluginLoadH
         -> (Stanza -> Stanza)
         -> Handler Stanza
         -> ChannelSettings
         -> Jid
         -> Handler Stanza
         -> IO (Jid, Handler Stanza, EventNetwork)
-runJoin esplugin mangle hout defaults j h = do
+runJoin hchanplugin mangle hout defaults j h = do
     (esinput, hinput) <- newAddHandler
+    (esplugin, hplugin) <- newAddHandler
+
     en <- setupChannelNetwork esinput esplugin mangle hout defaults
     actuate en
+
+    _ <- hchanplugin (j, hplugin)
+
     (h $ joinS j)
     return (j, hinput, en)
 

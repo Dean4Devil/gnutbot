@@ -15,6 +15,8 @@ import Reactive.Banana.Frameworks
 -- Left = Load, Right = Remove
 type PlugUpdate = Either (String, Plugin) (String)
 
+type PermUpdate = Either (JidKey, Permission) (JidKey, Permission)
+
 newtype JidKey = JidKey { toJid :: Jid }
     deriving (Eq, Show)
 
