@@ -21,6 +21,7 @@ import qualified Data.Text as T
 import Network.Xmpp.Internal
 
 import Gnut.Config
+import Gnut.Interface
 import Gnut.Xmpp
 import Gnut.Channel
 import Gnut.Types
@@ -34,7 +35,9 @@ run c = do
     (esstanza, hstanza) <- newAddHandler
     (eschannel, hchannel) <- newAddHandler
     (esprivmsg, hprivmsg) <- newAddHandler
+    (espmplugin, hpmplugin) <- newAddHandler
     (esplugin, hplugin) <- newAddHandler
+    (eschanplugin, hchanplugin) <- newAddHandler
     (esadmin, hadmin) <- newAddHandler
 
     let perms = userPermsFromAccessConfig $ c^.access
@@ -46,9 +49,10 @@ run c = do
     print perms
 
     xmpp <- setupXmppNetwork session esstanza eschannel hprivmsg
-    privmsg <- setupChannelNetwork esprivmsg esplugin id hstanza chansettings
+    privmsg <- setupChannelNetwork esprivmsg espmplugin id hstanza chansettings
 
-    admin <- setupAdminNetwork hchannel esadmin esplugin mangleMuc hstanza chansettings
+    admin <- setupAdminNetwork hchannel esadmin hchanplugin mangleMuc hstanza chansettings
+    iface <- setupInterfaceNetwork hpmplugin eschanplugin esplugin
 
     actuate admin
 

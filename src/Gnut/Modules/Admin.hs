@@ -106,9 +106,9 @@ runCommand :: PluginLoadH
            -> ChannelSettings
            -> ((Stanza, [Permissions]), Handler Stanza)
            -> Maybe (Either (IO (Jid, Handler Stanza, EventNetwork)) (IO Jid))
-runCommand esplugin mangle hout defaults ((s, p), h) = case parseCommand s of
+runCommand hplugin mangle hout defaults ((s, p), h) = case parseCommand s of
     Left _ -> Nothing
-    Right c -> if checkPerm c p then Just $ runCommand' esplugin mangle hout defaults (c, h)
+    Right c -> if checkPerm c p then Just $ runCommand' hplugin mangle hout defaults (c, h)
                                 else Nothing
 
 runCommand' :: PluginLoadH
@@ -117,7 +117,7 @@ runCommand' :: PluginLoadH
             -> ChannelSettings
             -> (Command, Handler Stanza)
             -> Either (IO (Jid, Handler Stanza, EventNetwork)) (IO Jid)
-runCommand' esplugin mangle hout defaults (Join j, h) = Left $ runJoin esplugin mangle hout defaults j h
+runCommand' hplugin mangle hout defaults (Join j, h) = Left $ runJoin hplugin mangle hout defaults j h
 runCommand' _ _ _ _ (Leave j, h) = Right $ runLeave j h
 
 runJoin :: PluginLoadH
@@ -134,7 +134,7 @@ runJoin hchanplugin mangle hout defaults j h = do
     en <- setupChannelNetwork esinput esplugin mangle hout defaults
     actuate en
 
-    _ <- hchanplugin (j, hplugin)
+    _ <- hchanplugin $ Left (j, hplugin)
 
     (h $ joinS j)
     return (j, hinput, en)

@@ -14,7 +14,7 @@ import Network.Xmpp (Jid)
 
 setupInterfaceNetwork :: Handler PlugUpdate
                       -> AddHandler (Either (Jid, Handler PlugUpdate) Jid)
-                      -> AddHandler PluginLoad
+                      -> AddHandler (Jid, PlugUpdate)
                       -> IO EventNetwork
 setupInterfaceNetwork hpmplugin eschan eschanplugin = compile $ do
     echan <- fromAddHandler eschan
