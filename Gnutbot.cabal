@@ -87,6 +87,7 @@ library
                  , containers
                  , unordered-containers
                  , pontarius-xmpp
+                 , cpython >= 3.5
 
     -- Directories containing source files.
     hs-source-dirs:      src
