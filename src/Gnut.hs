@@ -26,7 +26,11 @@ import Gnut.Xmpp
 import Gnut.Channel
 import Gnut.Types
 import Gnut.Permissions
+
 import Gnut.Modules.Admin
+
+import qualified Gnut.Modules.Echo as Echo
+import qualified Gnut.Modules.Hello as Hello
 
 run :: Config -> IO ()
 run c = do
@@ -42,7 +46,7 @@ run c = do
 
     let perms = userPermsFromAccessConfig $ c^.access
         chansettings = ChannelSettings
-                     { csPlugins = M.singleton "Admin" (adminPlugin hadmin)
+                     { csPlugins = M.fromList [("Admin", adminPlugin hadmin), ("Echo", Echo.getPlugin), ("Hello", Hello.getPlugin)]
                      , csPermissions = perms
                      }
 
@@ -51,7 +55,7 @@ run c = do
     xmpp <- setupXmppNetwork session esstanza eschannel hprivmsg
     privmsg <- setupChannelNetwork esprivmsg espmplugin id hstanza chansettings
 
-    admin <- setupAdminNetwork hchannel esadmin hchanplugin mangleMuc hstanza chansettings
+    admin <- setupAdminNetwork hchannel esadmin hchanplugin mangleMuc (hstanza . mangleMuc) chansettings
     iface <- setupInterfaceNetwork hpmplugin eschanplugin esplugin
 
     actuate admin
@@ -67,6 +71,7 @@ mangleMuc :: Stanza -> Stanza
 mangleMuc (MessageS m) = MessageS $ m { messageType = GroupChat
                                       , messageTo = fmap toBare (messageTo m)
                                       }
+mangleMuc o = o
 
 eventLoop :: Handler Stanza -> IO ()
 eventLoop esmsg = loop

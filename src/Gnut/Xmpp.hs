@@ -104,7 +104,7 @@ chanLookup :: Map Jid (Handler Stanza) -> Jid -> Maybe (Handler Stanza)
 chanLookup = flip M.lookup
 
 sendChannel :: Map Jid (Handler Stanza) -> Handler Stanza -> Stanza -> IO ()
-sendChannel m p s = maybe p id (chanLookup m =<< extractJid s) s
+sendChannel m p s = maybe p id (chanLookup m . toBare =<< extractJid s) s
 
 sendStanza_ :: Session -> Stanza -> IO ()
 sendStanza_ session stanza = do
