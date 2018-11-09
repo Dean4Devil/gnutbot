@@ -42,12 +42,16 @@ data ChannelSettings = ChannelSettings
     { csPlugins :: Map String Plugin
     , csPermissions :: Map Jid [Permissions]
     }
+instance Show ChannelSettings where
+    show c = "Plugins: " ++ show (M.keys $ csPlugins c) ++ "Permissions: " ++ show (csPermissions c)
 
 data Plugin =
      Plugin { plName :: String
             , plFilter :: Stanza -> Bool
             , plAction :: Stanza -> [Permissions] -> Handler Stanza -> IO ()
             }
+instance Show Plugin where
+    show = plName
 
 plugin n f a = Plugin { plName = n, plFilter = f, plAction = a }
 

@@ -54,7 +54,7 @@ setupAdminNetwork hchannel esinput hplugin mangle hout defaults = compile $ do
     (bnetwork, hnetwork) <- newBehavior M.empty
 
     let 
-        runCommandC = runCommand hplugin mangle hout defaults
+        runCommandC = runCommand hplugin mangleMuc hout defaults
         eemcommand = runCommandC <$> einput
         eemcommand :: Event (Maybe (Either (IO (Jid, Handler Stanza, EventNetwork)) (IO Jid)))
 
@@ -94,6 +94,11 @@ setupAdminNetwork hchannel esinput hplugin mangle hout defaults = compile $ do
 
     reactimate $ ((=<<) hnetwork) <$> unetadd
     reactimate $ ((=<<) hnetwork) <$> unetdel
+  where
+    mangleMuc :: Stanza -> Stanza
+    mangleMuc (MessageS m) = MessageS $ m { messageType = GroupChat
+                                        , messageTo = fmap toBare (messageTo m)
+                                        }
 
 
 addNetwork = (flip . uncurry) M.insert
